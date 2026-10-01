@@ -170,3 +170,7 @@ trained:
 All interfaces are batched over users (see `src/tvcsi/models/base.py`). Train on
 `results/dataset/*.npz`. The files hold the same channels, pilot estimates, importance and
 message types the simulator uses, split by seed: train 3000-3019, val 2000-2004, test 1000-1009.
+
+The dataset (about 290 MB) is not in git, because the files exceed GitHub's 100 MB limit.
+Rebuild it in about 30 seconds with `python scripts/export_dataset.py`. The output is identical
+on every run, because it uses the same fixed seeds as the simulator.
