@@ -1,0 +1,105 @@
+# TVCSI simulator — every tunable parameter lives here. Nothing numeric is hard-coded in src/.
+# Notation follows the formulation document (Eqs. 1-39) and the task spec.
+
+models: dummy              # dummy | trained
+trained:                   # used only when models == trained; dotted paths "package.module:ClassName"
+  encoder: null
+  decoder: null
+  predictor: null
+  kwargs: {}               # passed to every trained-model constructor
+
+system:
+  K: 8                     # users
+  M: 32                    # gNB antennas (ULA, half-wavelength spacing)
+  B: 32                    # DFT codebook size
+
+channel:
+  source: synthetic        # synthetic | deepmimo (deepmimo loader is a stub)
+  P: 3                     # propagation paths per user
+  fc_hz: 3.5e+9            # carrier frequency
+  Ts_s: 1.0e-3             # slot duration
+  speed_kmh: 30.0          # user speed (all users)
+  c_theta: 2.0e-4          # angular random-walk std per slot = c_theta * speed_kmh [rad]
+
+link:
+  snr_db: 15.0             # transmit SNR; aligned single-path beam gives gamma ~= snr_db
+  pilot_snr_offset_db: 5.0 # pilot SNR = snr_db + offset
+  eps: 1.0e-9              # Eq. 15 regularizer
+
+quality:                   # Q_type(gamma) = 1 / (1 + exp(-(gamma_dB - gamma0_type)/s))
+  gamma0_db:
+    critical: 14.0
+    normal: 10.0
+    background: 6.0
+  s_db: 1.5
+  q_min: 0.8               # Q_min for critical users (Eq. 34)
+
+importance:
+  crit_share: 0.25
+  low_range: [0.05, 0.3]
+  high_range: [0.7, 1.0]
+  p_low_to_high: 0.10      # non-critical users
+  p_high_to_low: 0.30
+  p_low_to_high_crit: 0.15 # critical users
+  p_high_to_low_crit: 0.20
+
+feedback:
+  code_len: [8, 16, 32]    # d_m for m = 1..3
+  bits_per_value: 4        # => C = [0, 32, 64, 128] bits
+  budget_frac: 0.25        # C_FB_max = budget_frac * K * C_3
+  history_len: 8           # L_h, slots of channel history handed to the encoder
+
+dummy:
+  sigma_m: [0.8, 0.4, 0.15] # log-normal decoding error per mode m = 1..3
+  tau: auto                # predictor confidence time constant: auto => 1/(1 - rho(speed)); or a number
+
+tvcsi:
+  n_bins: 10               # confidence quantile bins
+  eps: 1.0e-9              # Eq. 32 regularizer
+  table_path: results/tvcsi_table.json
+  refit_per_point: true    # fit a table on validation seeds at every sweep point (see ASSUMPTIONS.md)
+  fit_p0: [0.5, 0.9, 0.98] # random-mode policies used for fitting: P(mode 0); others uniform over 1..3
+
+baseline:
+  kind: periodic           # periodic | snr_threshold (what the 'Baseline' curve means)
+  m_fixed: 2
+
+sim:
+  T: 2000
+  warmup: 100
+  n_jobs: 0                # 0 => all CPU cores
+
+seeds:
+  test: [1000, 1001, 1002, 1003, 1004, 1005, 1006, 1007, 1008, 1009]
+  val: [2000, 2001, 2002, 2003, 2004]
+  train: [3000, 3001, 3002, 3003, 3004, 3005, 3006, 3007, 3008, 3009,
+          3010, 3011, 3012, 3013, 3014, 3015, 3016, 3017, 3018, 3019]
+
+metrics:
+  cvar_alpha: 0.95
+
+schemes:
+  main: [Exact, Optimised, Proposed, Baseline]
+  supplementary: [prediction_only, importance_only, snr_threshold, full_feedback,
+                  Proposed_no_confidence, Proposed_no_importance]
+
+sweeps:
+  budget:         {param: feedback.budget_frac, values: [0.05, 0.1, 0.2, 0.3, 0.5, 0.75, 1.0]}
+  users:          {param: system.K,             values: [2, 4, 6, 8, 12, 16]}
+  speed:          {param: channel.speed_kmh,    values: [3, 10, 20, 30, 40, 60]}
+  critical_share: {param: importance.crit_share, values: [0.0, 0.1, 0.25, 0.5, 0.75]}
+  snr:            {param: link.snr_db,          values: [5, 10, 15, 20, 25]}
+  bits_target_frac: 0.9    # fig 10: fraction of full_feedback utility to reach
+
+runtime:
+  K_values: [2, 4, 6, 8, 10, 12, 16]
+  brute_force_max_K: 10
+  n_instances: 50          # random decision instances per seed and K
+  n_seeds: 10
+
+paths:
+  results: results
+  figures: figures
+
+plots:
+  dpi: 200

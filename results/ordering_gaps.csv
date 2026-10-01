@@ -1,0 +1,88 @@
+sweep,x,pair,what,mean,half
+budget,0.05,Exact - Optimised,information gap,0.6435507671992434,0.07376995121936135
+budget,0.05,Optimised - Proposed,greedy gap,-0.07701596487912851,0.05698849799417311
+budget,0.05,Proposed - Baseline,contribution,0.5688153696298885,0.08156751760557672
+budget,0.1,Exact - Optimised,information gap,0.49875796571911357,0.041595000686810636
+budget,0.1,Optimised - Proposed,greedy gap,-0.1275595834308871,0.04026436589287947
+budget,0.1,Proposed - Baseline,contribution,0.15328675925337357,0.053211781064395176
+budget,0.2,Exact - Optimised,information gap,0.5112261226231198,0.07604703642398865
+budget,0.2,Optimised - Proposed,greedy gap,-0.0304993626143679,0.09030641813875119
+budget,0.2,Proposed - Baseline,contribution,-0.27333962468345563,0.038078974490374236
+budget,0.3,Exact - Optimised,information gap,0.252964752590649,0.03225700304335891
+budget,0.3,Optimised - Proposed,greedy gap,-0.0896829928541478,0.031146204293190045
+budget,0.3,Proposed - Baseline,contribution,-0.013061091184267414,0.004878812885793009
+budget,0.5,Exact - Optimised,information gap,0.20159524304168297,0.034232315610636686
+budget,0.5,Optimised - Proposed,greedy gap,-0.01975767501529315,0.02979868392250846
+budget,0.5,Proposed - Baseline,contribution,-0.0986968540124646,0.016818823931097113
+budget,0.75,Exact - Optimised,information gap,0.06585771954073176,0.0058161126317397985
+budget,0.75,Optimised - Proposed,greedy gap,-0.006682738848481451,0.0030971305527886656
+budget,0.75,Proposed - Baseline,contribution,0.023965848776495435,0.004171528217919886
+budget,1.0,Exact - Optimised,information gap,0.028445760967463228,0.0016403240020944117
+budget,1.0,Optimised - Proposed,greedy gap,0.0,0.0
+budget,1.0,Proposed - Baseline,contribution,0.054695068501282515,0.0026517684708268047
+critical_share,0.0,Exact - Optimised,information gap,0.5097259812443001,0.07288823830780818
+critical_share,0.0,Optimised - Proposed,greedy gap,-0.06800543132788353,0.059428484636031405
+critical_share,0.0,Proposed - Baseline,contribution,-0.2711990772757631,0.04952121409852746
+critical_share,0.1,Exact - Optimised,information gap,0.488299504300994,0.05976204342564127
+critical_share,0.1,Optimised - Proposed,greedy gap,-0.045718798239824145,0.0737845370696683
+critical_share,0.1,Proposed - Baseline,contribution,-0.2812071384396222,0.07293093391382152
+critical_share,0.25,Exact - Optimised,information gap,0.43574992302886545,0.06410537979875491
+critical_share,0.25,Optimised - Proposed,greedy gap,-0.05170920448289993,0.06264817277754678
+critical_share,0.25,Proposed - Baseline,contribution,-0.23411521003877125,0.03628535332929828
+critical_share,0.5,Exact - Optimised,information gap,0.39200003785107423,0.027226778291728374
+critical_share,0.5,Optimised - Proposed,greedy gap,-0.0241468038765398,0.03805809776714699
+critical_share,0.5,Proposed - Baseline,contribution,-0.23941907464736406,0.037604333510724515
+critical_share,0.75,Exact - Optimised,information gap,0.3896764200146938,0.036013251300927855
+critical_share,0.75,Optimised - Proposed,greedy gap,-0.006989116099744963,0.06129274041534205
+critical_share,0.75,Proposed - Baseline,contribution,-0.27242870444332756,0.04761312556157537
+snr,5.0,Exact - Optimised,information gap,0.04035525445713113,0.0026584130071166745
+snr,5.0,Optimised - Proposed,greedy gap,-0.0003250333267798111,0.00127447359237145
+snr,5.0,Proposed - Baseline,contribution,-0.005839538716276418,0.0014258227744848439
+snr,10.0,Exact - Optimised,information gap,0.1966073208620988,0.012128552233653687
+snr,10.0,Optimised - Proposed,greedy gap,0.0004928666434034501,0.00559351532045157
+snr,10.0,Proposed - Baseline,contribution,-0.08938156250650857,0.01398532860399309
+snr,15.0,Exact - Optimised,information gap,0.43574992302886545,0.06410537979875491
+snr,15.0,Optimised - Proposed,greedy gap,-0.05170920448289993,0.06264817277754678
+snr,15.0,Proposed - Baseline,contribution,-0.23411521003877125,0.03628535332929828
+snr,20.0,Exact - Optimised,information gap,0.6002401027683701,0.08306469590128664
+snr,20.0,Optimised - Proposed,greedy gap,-0.07491910609551619,0.11866598582815127
+snr,20.0,Proposed - Baseline,contribution,-0.4002605383809751,0.09286795617477026
+snr,25.0,Exact - Optimised,information gap,0.3853836379264998,0.08686952183822383
+snr,25.0,Optimised - Proposed,greedy gap,-0.04492052006766878,0.08066202329795497
+snr,25.0,Proposed - Baseline,contribution,-0.2818326103760088,0.0812970645470866
+speed,3.0,Exact - Optimised,information gap,0.07997911357481671,0.02875067171295859
+speed,3.0,Optimised - Proposed,greedy gap,-0.021814942449522645,0.022725483840169536
+speed,3.0,Proposed - Baseline,contribution,0.04529939736781128,0.0063058163175314305
+speed,10.0,Exact - Optimised,information gap,0.18567852771216223,0.03622306582154505
+speed,10.0,Optimised - Proposed,greedy gap,-0.03565817835107106,0.020378126461859585
+speed,10.0,Proposed - Baseline,contribution,-0.048357230604312254,0.027242134164744622
+speed,20.0,Exact - Optimised,information gap,0.3319106617170018,0.060994389049840066
+speed,20.0,Optimised - Proposed,greedy gap,-0.035594530548778744,0.06048587136881308
+speed,20.0,Proposed - Baseline,contribution,-0.17681809433848023,0.033198885284950914
+speed,30.0,Exact - Optimised,information gap,0.43574992302886545,0.06410537979875491
+speed,30.0,Optimised - Proposed,greedy gap,-0.05170920448289993,0.06264817277754678
+speed,30.0,Proposed - Baseline,contribution,-0.23411521003877125,0.03628535332929828
+speed,40.0,Exact - Optimised,information gap,0.546160041058951,0.06813859536760422
+speed,40.0,Optimised - Proposed,greedy gap,-0.031611706985209154,0.05724347207066485
+speed,40.0,Proposed - Baseline,contribution,-0.32361477444546577,0.046327894677891626
+speed,60.0,Exact - Optimised,information gap,0.6218150294813074,0.05789059865544286
+speed,60.0,Optimised - Proposed,greedy gap,-0.04736360388726507,0.09390326323718806
+speed,60.0,Proposed - Baseline,contribution,-0.29788995754267245,0.0879507381270464
+users,2.0,Exact - Optimised,information gap,0.051378917740475094,0.010396827475912423
+users,2.0,Optimised - Proposed,greedy gap,-0.001227214712416183,0.0036555254812196502
+users,2.0,Proposed - Baseline,contribution,-0.022608845245305143,0.007104774277019328
+users,4.0,Exact - Optimised,information gap,0.16360009101371825,0.016623109056016435
+users,4.0,Optimised - Proposed,greedy gap,0.006660266027387618,0.03573339342086915
+users,4.0,Proposed - Baseline,contribution,-0.09367580623162883,0.0367321978314295
+users,6.0,Exact - Optimised,information gap,0.28799730642442406,0.0364028002419547
+users,6.0,Optimised - Proposed,greedy gap,-0.04398121024655183,0.02272041440898479
+users,6.0,Proposed - Baseline,contribution,-0.13554238872148897,0.02421413768606988
+users,8.0,Exact - Optimised,information gap,0.43574992302886545,0.06410537979875491
+users,8.0,Optimised - Proposed,greedy gap,-0.05170920448289993,0.06264817277754678
+users,8.0,Proposed - Baseline,contribution,-0.23411521003877125,0.03628535332929828
+users,12.0,Exact - Optimised,information gap,0.7285941795521941,0.08864977966431149
+users,12.0,Optimised - Proposed,greedy gap,-0.06209645327841653,0.108177290026801
+users,12.0,Proposed - Baseline,contribution,-0.43835019078949794,0.061145297140598985
+users,16.0,Exact - Optimised,information gap,1.0228600654145712,0.11338576244212024
+users,16.0,Optimised - Proposed,greedy gap,-0.04198202039210926,0.08194244035510975
+users,16.0,Proposed - Baseline,contribution,-0.6761883982509208,0.09183687249853562
