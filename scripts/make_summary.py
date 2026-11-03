@@ -307,7 +307,7 @@ def main() -> None:
         L.append(f"| {K} | " + " | ".join("—" if not np.isfinite(v) else f"{v:.3f}" for v in r) + " |")
     L += [""]
 
-    (res / "summary.md").write_text("\n".join(L))
+    (res / "summary.md").write_text("\n".join(L), encoding="utf-8")
     print(f"wrote {res / 'summary.md'}")
 
 

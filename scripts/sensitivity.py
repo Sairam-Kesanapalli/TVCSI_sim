@@ -166,7 +166,7 @@ def main() -> None:
         L.append(f"| {sc:g} | {inf} | " + " | ".join(cells) + " |")
     L += [""]
 
-    (res / "sensitivity.md").write_text("\n".join(L))
+    (res / "sensitivity.md").write_text("\n".join(L), encoding="utf-8")
     print(f"wrote {res / 'sensitivity.md'}")
 
 
