@@ -33,13 +33,17 @@ class DecisionInputs:
                                          #   back (mode > 0); 1 = previous slot, inf = never
     last_mode: np.ndarray | None = None  # [K] int64: mode this scheme chose in the previous slot (0 at t = 0)
     types: np.ndarray | None = None      # [K] int: message type (importance.CRITICAL, NORMAL, BACKGROUND)
+    # S4: outage probability Pr[Q_k^m < Q_min] per mode from the learned estimator (None otherwise)
+    p_out: np.ndarray | None = None      # [K, M_f + 1] float in [0, 1]
 
 
 @dataclass(frozen=True)
 class Scheme:
     name: str
     decide: Callable[[DecisionInputs, np.ndarray | None], np.ndarray]
-    estimator: str | None = None   # None | "full" | "no_confidence" | "no_importance"
+    # None | "learned" | "learned_no_importance" (S4 learned estimator)
+    #      | "full" | "no_confidence" | "no_importance" (mean-regret plug-in table, the *_plugin ablations)
+    estimator: str | None = None
     uses_truth: bool = False       # receives true utilities (Exact only)
     budget_exempt: bool = False    # may exceed C_FB_max (full_feedback and fitting policies)
 
@@ -90,14 +94,25 @@ def build_scheme(name: str, cfg: dict, rng: np.random.Generator | None = None) -
         return Scheme(name, base)
     if name == "Exact":
         return Scheme(name, lambda inp, U_true: dp_mckp(U_true, inp.costs, inp.budget), uses_truth=True)
+    dp = lambda inp, _: dp_mckp(inp.U_hat, inp.costs, inp.budget)            # noqa: E731
+    greedy = lambda inp, _: greedy_tvcsi(inp.U_hat, inp.costs, inp.budget)   # noqa: E731
+    # S4: the main schemes use the learned per-mode quality estimator (tvcsi.estimator).
     if name == "Optimised":
-        return Scheme(name, lambda inp, _: dp_mckp(inp.U_hat, inp.costs, inp.budget), "full")
+        return Scheme(name, dp, "learned")
     if name == "Proposed":
-        return Scheme(name, lambda inp, _: greedy_tvcsi(inp.U_hat, inp.costs, inp.budget), "full")
-    if name == "Proposed_no_confidence":
-        return Scheme(name, lambda inp, _: greedy_tvcsi(inp.U_hat, inp.costs, inp.budget), "no_confidence")
+        return Scheme(name, greedy, "learned")
     if name == "Proposed_no_importance":
-        return Scheme(name, lambda inp, _: greedy_tvcsi(inp.U_hat, inp.costs, inp.budget), "no_importance")
+        return Scheme(name, greedy, "learned_no_importance")
+    # Pre-S4 mean-regret plug-in, kept unchanged as ablations (bit-identical to the old
+    # Optimised / Proposed / Proposed_no_confidence / Proposed_no_importance).
+    if name == "Optimised_plugin":
+        return Scheme(name, dp, "full")
+    if name == "Proposed_plugin":
+        return Scheme(name, greedy, "full")
+    if name == "Proposed_plugin_no_confidence":
+        return Scheme(name, greedy, "no_confidence")
+    if name == "Proposed_plugin_no_importance":
+        return Scheme(name, greedy, "no_importance")
     if name == "periodic":
         return Scheme(name, periodic)
     if name == "snr_threshold":

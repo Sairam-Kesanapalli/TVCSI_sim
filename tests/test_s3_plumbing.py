@@ -16,7 +16,7 @@ from tvcsi.config import ROOT, load_config, resolve_path
 from tvcsi.importance import assign_types
 from tvcsi.models import predictor_tau
 from tvcsi.schemes import Scheme
-from tvcsi.sim import simulate
+from tvcsi.sim import ORACLE, simulate
 from tvcsi.tvcsi import TVCSITable
 
 GOLDEN = ROOT / "research" / "logs" / "S3" / "golden_pre_S3.npz"
@@ -34,19 +34,29 @@ def _golden():
 GOLDEN_DATA, GOLDEN_META = _golden()
 
 
+# S4 renamed the pre-S4 plug-in schemes (the names Optimised / Proposed / Proposed_no_importance now
+# use the learned estimator, deliberately different). The renamed plug-in schemes must still reproduce
+# the pre-S3 decisions and metrics exactly.
+RENAMED_S4 = {"Optimised": "Optimised_plugin", "Proposed": "Proposed_plugin",
+              "Proposed_no_confidence": "Proposed_plugin_no_confidence",
+              "Proposed_no_importance": "Proposed_plugin_no_importance"}
+
+
 @pytest.mark.parametrize("case", list(GOLDEN_META["cases"]))
 @pytest.mark.parametrize("seed", GOLDEN_META["seeds"])
 def test_golden_regression_bit_identical(case, seed):
     cfg = load_config(overrides=GOLDEN_META["cases"][case])
     table = TVCSITable.from_json(resolve_path(cfg, cfg["tvcsi"]["table_path"]))
-    res = simulate(cfg, seed, GOLDEN_META["schemes"], table=table, record_decisions=True)
+    now = {n: RENAMED_S4.get(n, n) for n in GOLDEN_META["schemes"]}   # golden name -> current name
+    res = simulate(cfg, seed, list(now.values()), table=table, record_decisions=True)
     names = GOLDEN_META["metric_names"]
     for name in GOLDEN_META["schemes"]:
         old = GOLDEN_DATA[f"{case}/{seed}/{name}/decisions"]
-        new = res.decisions[name]
+        new = res.decisions[now[name]]
         assert new.dtype == old.dtype, name
-        assert np.array_equal(new, old), f"{case} seed {seed}: decisions of {name} changed"
-    for name, m in res.metrics.items():                  # all schemes + the BestBeam_oracle row
+        assert np.array_equal(new, old), f"{case} seed {seed}: decisions of {name} ({now[name]}) changed"
+    for name in GOLDEN_META["schemes"] + [ORACLE]:     # all schemes + the BestBeam_oracle row
+        m = res.metrics[now.get(name, name)]
         assert sorted(m) == names, name
         new = np.array([m[k] for k in names], dtype=float)
         old = GOLDEN_DATA[f"{case}/{seed}/{name}/metrics"]
@@ -133,13 +143,13 @@ def test_inputs_are_copies(probe_cfg):
             assert np.array_equal(a[f], b[f]), f"{f} at t={a['t']}"
 
 
-def test_existing_scheme_unaffected_by_mutating_neighbour(probe_cfg):
+def test_existing_scheme_unaffected_by_mutating_neighbour(probe_cfg, estimator):
     """Running a mutating probe next to real schemes does not change their decisions."""
     table = TVCSITable.from_json(resolve_path(probe_cfg, probe_cfg["tvcsi"]["table_path"]))
-    names = ["Proposed", "Baseline", "Exact"]
-    alone = simulate(probe_cfg, 1003, names, table=table, record_decisions=True)
+    names = ["Proposed", "Proposed_plugin", "Baseline", "Exact"]
+    alone = simulate(probe_cfg, 1003, names, table=table, estimator=estimator, record_decisions=True)
     with_probe = simulate(probe_cfg, 1003, names + [_probe("dirty", [], mutate=True)],
-                          table=table, record_decisions=True)
+                          table=table, estimator=estimator, record_decisions=True)
     for n in names:
         assert np.array_equal(alone.decisions[n], with_probe.decisions[n]), n
 

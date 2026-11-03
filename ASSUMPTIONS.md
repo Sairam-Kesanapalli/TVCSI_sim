@@ -270,6 +270,43 @@ differ, the prompt was followed.
     changed; every decision and metric is bit-identical to the pre-S3 code (golden regression,
     `research/logs/S3/golden_pre_S3.npz`).
 
+## Stage S4: learned per-mode quality estimator (replaces the mean-regret plug-in)
+
+56. **What is estimated.** For every user k and mode m: E[Q_k^m | gNB-side features] and
+    Pr[Q_k^m < Q_min] (`src/tvcsi/estimator.py`). Uhat[k][m] = v_k E[Q_k^m]; TVCSI (Eq. 32) and the
+    solvers are unchanged. The plug-in Uhat = v Q(gamma_ref (1 - mean regret)) sat on the flat top of
+    the measured Q, so it saw no value in feedback (Proposed and Optimised sent 0 bits).
+57. **Features** (gNB-side only, from `DecisionInputs`, S3): believed SINR of the predicted beam
+    [dB], margin (top1 - top2) / top1, peak share top1 / sum, SINR of the second beam [dB], age
+    (capped, P26) and log(1 + age), a never-fed-back flag, predictor confidence, last mode, message
+    type, and the configuration values SNR [dB], speed [km/h] and PRBs per user. Labels: the
+    counterfactual per-mode Q of the slot that the simulator computes for evaluation. The tamper
+    test (`tests/test_stage3_sim.py::test_no_true_channel_leak`, now with the learned schemes) checks
+    that no true-channel quantity reaches the decisions.
+58. **Frozen, one model for all sweep points.** It is fitted once, at the default configuration plus
+    the one-at-a-time variations of P27, and reused unchanged at every sweep point (no refit per
+    point, unlike the plug-in table, item 21). Configuration values are features, so the model
+    knows which point it is at.
+59. **Data split.** Training data from the TRAIN seeds 3000-3019, the leaf size chosen on the
+    VALIDATION seeds 2000-2004, results reported once on the TEST seeds 1000-1009.
+    `seeds_per_config` seeds per configuration, cycled through each list.
+60. **Exploration policies** (`estimator.fit_p0`): each user independently gets mode 0 with
+    probability p0 in {0.5, 0.75, 0.9, 0.98}, otherwise a uniform mode 1..3 (budget-exempt, data
+    only). They spread the feedback age over short and long gaps. Known limitation: the trajectory of
+    the real Proposed scheme differs from these policies, so the test gain correlation measured along
+    the Proposed trajectory (0.10-0.23) is lower than on validation data (0.29-0.38).
+61. **Names.** `Optimised`, `Proposed`, `Proposed_no_importance` use the learned estimator.
+    The pre-S4 schemes are kept, bit-identical, as `Optimised_plugin`, `Proposed_plugin`,
+    `Proposed_plugin_no_confidence`, `Proposed_plugin_no_importance`. A learned "no confidence"
+    ablation was not added (it would need a second model without the age / confidence features).
+62. **The outage probability is estimated but not used by any decision in S4.** It is passed to the
+    schemes as `DecisionInputs.p_out` for S5 (risk handling).
+63. **Caching.** The fitted model is stored as `results/estimators/estimator_<hash>.joblib` (not in
+    git, ~7 MB) plus a `.json` report (in git). The hash covers every config value it depends on;
+    fitting is deterministic (fixed seeds and `random_state`), so a missing file is rebuilt
+    identically by `python scripts/fit_estimator.py` (~1.5 min on 8 cores). Prediction runs
+    single-threaded (`n_jobs = 1`); a thread pool per call was 4x slower.
+
 ## Parameter values: what, why, how, where
 
 Every number added in Phase 1, in the same format. "Source" is the document the value comes from;
@@ -529,4 +566,33 @@ standard value exists, this is said explicitly and the value is stress-tested in
 **P23. Q_min (`quality.q_min`), unchanged**
 * Value: **0.8**, from the original task spec (Eq. 34). With measured Q it means **BLER <= 0.2**:
   a critical message must get through at least 4 times out of 5 in a slot to count as served.
+
+**P25. Estimator model (`estimator.n_estimators`, `max_features`, `random_state`)**
+* What: an ExtraTrees forest (scikit-learn) with 2 (M_f + 1) = 8 outputs.
+* Value: **40 trees, max_features 0.8, random_state 17**.
+* Why: the faculty calibrator (TaskVoCSI_v2 `policy.py`) uses ExtraTrees with 32-48 trees and
+  max_features 0.8; 40 lies in that range. Not tuned further.
+* Where: `src/tvcsi/estimator.py::_forest`.
+
+**P26. Age cap (`estimator.age_cap`)**
+* Value: **200 slots**; "never fed back" also maps to 200 (plus the never-fed flag).
+* Why: at the slowest sweep speed (3 km/h) the confidence time constant is ~1075 slots, but beyond
+  ~200 slots the predicted beam is stale at every speed of the grid; a cap keeps the feature finite.
+
+**P27. Training grid (`estimator.train_grid`, `seeds_per_config`, `slot_stride`)**
+* Value: default point + speed {3, 10, 20, 40, 60} km/h, SNR {5, 10, 20, 25} dB, K {2, 4, 6, 12, 16}
+  (the sweep values) = 15 configurations; 4 seeds each; every 16th slot kept.
+* Why: one frozen model must serve every sweep point; these are the points it is used at. Budget
+  and critical share need no grid: the exploration policies ignore the budget, and the message type
+  is a feature. Every 16th slot: consecutive slots are strongly correlated; 240 000 samples per split.
+* How: `scripts/fit_estimator.py` -> results/estimators/estimator_<hash>.json.
+
+**P28. Leaf size (`estimator.min_samples_leaf`)**
+* Value: candidates **{25, 50, 100}**, chosen on validation by mean gain correlation (MAE breaks
+  ties) -> **100** (validation gain correlation 0.288 / 0.347 / 0.376 for modes 1-3, MAE 0.132).
+  All three candidates were within 0.01 of each other.
+
+**P29. Exploration policies (`estimator.fit_p0`)**
+* Value: **{0.5, 0.75, 0.9, 0.98}** = probability of mode 0 per user and slot.
+* Why: the plug-in table used {0.5, 0.9, 0.98} (item 19); 0.75 was added to cover medium ages.
 

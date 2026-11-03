@@ -1,0 +1,32 @@
+estimator data: train 240000 samples, val 240000 samples (55s)
+  leaf 25: val MAE 0.1312  gain corr [0.282, 0.342, 0.372]
+  leaf 50: val MAE 0.1317  gain corr [0.287, 0.346, 0.375]
+  leaf 100: val MAE 0.1324  gain corr [0.288, 0.347, 0.376]
+chosen min_samples_leaf = 100 (79s)
+estimator: C:\Users\palya\OneDrive\Desktop\TVCSI_sim\results\estimators\estimator_f6d7d1a8a12b.joblib
+{
+ "chosen_min_samples_leaf": 100,
+ "n_train": 240000,
+ "n_val": 240000,
+ "features": [
+  "gref_db",
+  "margin",
+  "peak_share",
+  "top2_db",
+  "age",
+  "log_age",
+  "never_fed",
+  "conf",
+  "last_mode",
+  "type",
+  "snr_db",
+  "speed_kmh",
+  "n_prb"
+ ],
+ "fit_seconds": 79.2399628162384,
+ "train_configs": 15
+}
+
+real	1m21.437s
+user	0m0.000s
+sys	0m0.015s

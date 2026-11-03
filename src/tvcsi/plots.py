@@ -31,7 +31,9 @@ STYLE = {
     "prediction_only":        dict(color="#eda100", marker="v", ls="-."),
     "importance_only":        dict(color="#e87ba4", marker="P", ls="-."),
     "snr_threshold":          dict(color="#008300", marker="X", ls="-."),
-    "Proposed_no_confidence": dict(color="#4a3aa7", marker="<", ls=":"),
+    "Proposed_plugin":        dict(color="#4a3aa7", marker="<", ls=":"),   # S4: pre-S4 mean-regret plug-in
+    "Optimised_plugin":       dict(color=INK_2,     marker="o", ls=":"),
+    "Proposed_plugin_no_confidence": dict(color="#4a3aa7", marker="<", ls=(0, (3, 1, 1, 1))),
     "Proposed_no_importance": dict(color="#e34948", marker=">", ls=":"),
     "full_feedback":          dict(color="#8a8985", marker="*", ls=(0, (1, 1))),
     "BestBeam_oracle":        dict(color="#8a8985", marker="", ls=":"),
@@ -87,7 +89,7 @@ def save(fig, out_dir: Path, name: str, dpi: int) -> None:
 
 MAIN = ["Exact", "Optimised", "Proposed", "Baseline"]
 SUPP_LEFT = MAIN + ["prediction_only", "importance_only", "snr_threshold", "full_feedback"]
-SUPP_RIGHT = ["Proposed", "Proposed_no_confidence", "Proposed_no_importance", "Baseline"]
+SUPP_RIGHT = ["Proposed", "Proposed_no_importance", "Proposed_plugin", "Baseline"]
 BUDGET_LABEL = "Feedback budget $C^{FB}_{max}$ [fraction of $K\\,C_3$]"
 SPEED_LABEL = "User speed [km/h]"
 

@@ -21,6 +21,7 @@ import pandas as pd
 from tvcsi.config import apply_overrides, load_config, resolve_path
 from tvcsi.metrics import objective_p1, t_interval
 from tvcsi.sim import ORACLE, simulate
+from tvcsi.estimator import get_estimator
 from tvcsi.sweep import get_table
 
 # Implementable schemes only: Exact is a genie and full_feedback ignores the budget.
@@ -74,7 +75,8 @@ def lambda_tables(df: pd.DataFrame, cfg: dict) -> tuple[pd.DataFrame, pd.DataFra
 
 def _payload_job(args):
     cfg, seed, schemes = args
-    res = simulate(cfg, seed, schemes, table=get_table(cfg))
+    # payload_check_scale is evaluation-only, so every job maps to the base-config estimator
+    res = simulate(cfg, seed, schemes, table=get_table(cfg), estimator=get_estimator(cfg))
     keys = ("payload_miss_rate", "payload_miss_rate_feasible", "payload_infeasible_share")
     return [dict(scheme=n, seed=seed, **{k: m[k] for k in keys}) for n, m in res.metrics.items()]
 
@@ -82,6 +84,7 @@ def _payload_job(args):
 def payload_table(cfg: dict, n_jobs: int) -> pd.DataFrame:
     sens = cfg["constraints"]["sensitivity"]
     schemes = ["Exact", "Optimised", "Proposed", "Baseline"]
+    get_estimator(cfg)                     # fit/cache once before the workers start
     jobs, scales = [], []
     for sc in sens["payload_scale"]:
         c = apply_overrides(cfg, {"constraints.payload_check_scale": sc})

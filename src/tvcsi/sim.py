@@ -20,6 +20,7 @@ from .metrics import cvar, objective_p1, semantic_loss, switch_indicator
 from .models import build_models
 from .quality import QualityModel, build_quality
 from .schemes import DecisionInputs, Scheme, build_scheme
+from .estimator import QualityEstimator, SlotContext, features
 from .tvcsi import TVCSITable, expected_utility, fit_table, gamma_ref
 
 _STREAMS = ("channel", "importance", "pilot", "encoder", "policy")
@@ -104,7 +105,9 @@ def make_realization(cfg: dict, rngs: dict[str, np.random.Generator]) -> Realiza
 
 def simulate(cfg: dict, seed: int, scheme_names: list[str | Scheme], table: TVCSITable | None = None,
              tamper: Callable[[SimpleNamespace], None] | None = None, collect_samples: bool = False,
-             keep_traces: bool = False, record_decisions: bool = False) -> SimResult:
+             keep_traces: bool = False, record_decisions: bool = False,
+             estimator: "QualityEstimator | None" = None,
+             observer: Callable | None = None) -> SimResult:
     """Run T slots for every scheme on the realisation of `seed`.
 
     scheme_names holds scheme names or ready-made Scheme objects (used for diagnostic probes).
@@ -112,6 +115,11 @@ def simulate(cfg: dict, seed: int, scheme_names: list[str | Scheme], table: TVCS
     tamper(shared), if given, is called after the shared per-mode outcome tables of a slot are
     built and may overwrite shared.g_true; it exists to test that no true-channel quantity
     reaches the decisions of non-genie schemes.
+
+    estimator (S4) is the frozen learned quality estimator used by the "learned*" schemes; the
+    "*_plugin" schemes use `table`. observer(name, inputs, Q_all, modes), if given, is called after
+    every decision with a copy of the true per-mode Q of that slot; it only reads (estimator data
+    collection, diagnostics) and cannot change any decision.
     """
     K, M, B = cfg["system"]["K"], cfg["system"]["M"], cfg["system"]["B"]
     T, warmup = cfg["sim"]["T"], cfg["sim"]["warmup"]
@@ -126,8 +134,12 @@ def simulate(cfg: dict, seed: int, scheme_names: list[str | Scheme], table: TVCS
     quality = build_quality(cfg, real.types)                         # Q_k(gamma) of every user
     encoder, decoder, make_predictor = build_models(cfg, W, rngs["encoder"])
     schemes = [n if isinstance(n, Scheme) else build_scheme(n, cfg, rngs["policy"]) for n in scheme_names]
-    if table is None and any(s.estimator for s in schemes):
-        raise ValueError("a TVCSI table is required for estimator-based schemes")
+    learned = [s.estimator is not None and s.estimator.startswith("learned") for s in schemes]
+    if table is None and any(s.estimator and not lr for s, lr in zip(schemes, learned)):
+        raise ValueError("a TVCSI table is required for the plug-in (*_plugin) schemes")
+    if estimator is None and any(learned):
+        raise ValueError("a learned QualityEstimator is required for Optimised / Proposed (S4)")
+    ctx = SlotContext.from_cfg(cfg) if any(learned) else None
     predictors = [make_predictor(K) for _ in schemes]
     # S3: per-scheme feedback bookkeeping, kept here (not in the predictor) so it is the same for
     # every predictor type. age = slots since the user's last mode > 0 feedback under this scheme
@@ -162,9 +174,21 @@ def simulate(cfg: dict, seed: int, scheme_names: list[str | Scheme], table: TVCS
             tamper(shared)
         v = real.v[:, t]
 
+        # Step 4a: every scheme's prediction; then ONE batched estimator call for all learned
+        # schemes of this slot (S4; one call per scheme would dominate the run time).
+        preds = [p.predict() for p in predictors]
+        est_out = {}
+        idx = [i for i, lr in enumerate(learned) if lr]
+        if idx:
+            X = np.vstack([features(preds[i][0], preds[i][1], ages[i], last_modes[i], real.types, ctx)
+                           for i in idx])
+            Qh, Po = estimator.predict(X)
+            for j, i in enumerate(idx):
+                est_out[i] = (Qh[j * K:(j + 1) * K], Po[j * K:(j + 1) * K])
+
         for i, scheme in enumerate(schemes):
-            # Step 4: this scheme's prediction and the mode-0 outcome it would realise.
-            ghat0, conf = predictors[i].predict()
+            # Step 4b: the mode-0 outcome this scheme's prediction would realise.
+            ghat0, conf = preds[i]
             b0 = select_beam(ghat0)
             beams[:, 0], beams[:, 1:] = b0, shared.b_fb
             d_all[:, 0], d_all[:, 1:] = beam_regret(shared.g_true, b0, eps), shared.d_fb
@@ -174,16 +198,23 @@ def simulate(cfg: dict, seed: int, scheme_names: list[str | Scheme], table: TVCS
 
             # Step 5-6: estimate utilities from gNB-side information only, then decide.
             gref = gamma_ref(ghat0, snr_lin, M)
-            U_hat = None
-            if scheme.estimator:
+            U_hat, p_out = None, None
+            if learned[i]:
+                Q_hat, p_out = est_out[i]
+                w = np.ones_like(v) if scheme.estimator == "learned_no_importance" else v
+                U_hat = w[:, None] * Q_hat
+            elif scheme.estimator:
                 U_hat = expected_utility(table, gref, conf, v, quality,
                                          use_confidence=scheme.estimator != "no_confidence",
                                          use_importance=scheme.estimator != "no_importance")
             U_true = v[:, None] * Q_all if scheme.uses_truth else None
             inp = DecisionInputs(t, U_hat, gref, v, costs, budget,
                                  ghat0=ghat0.copy(), conf=conf.copy(), age=ages[i].copy(),
-                                 last_mode=last_modes[i].copy(), types=real.types.copy())
+                                 last_mode=last_modes[i].copy(), types=real.types.copy(),
+                                 p_out=None if p_out is None else p_out.copy())
             modes = scheme.decide(inp, U_true)
+            if observer is not None:
+                observer(scheme.name, inp, Q_all.copy(), np.array(modes, copy=True))
             if not scheme.budget_exempt:
                 assert costs[modes].sum() <= budget + 1e-9, f"{scheme.name} exceeded the feedback budget at t={t}"
 

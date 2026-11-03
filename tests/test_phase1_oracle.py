@@ -10,7 +10,8 @@ from tvcsi.link import deliverable_bits
 from tvcsi.sim import ORACLE, fit_tvcsi_table, simulate
 
 ALL = ["Exact", "Optimised", "Proposed", "Baseline", "prediction_only", "importance_only",
-       "snr_threshold", "full_feedback", "Proposed_no_confidence", "Proposed_no_importance"]
+       "snr_threshold", "full_feedback", "Proposed_no_importance", "Optimised_plugin", "Proposed_plugin",
+       "Proposed_plugin_no_confidence", "Proposed_plugin_no_importance"]
 
 
 @pytest.fixture(scope="module")
@@ -24,8 +25,8 @@ def table(short_cfg):
 
 
 @pytest.fixture(scope="module")
-def run(short_cfg, table):
-    return simulate(short_cfg, 1000, ALL, table=table).metrics
+def run(short_cfg, table, estimator):
+    return simulate(short_cfg, 1000, ALL, table=table, estimator=estimator).metrics
 
 
 def test_oracle_bounds_every_scheme(run):
@@ -54,12 +55,12 @@ def test_violation_decomposition(run):
     assert run[ORACLE]["payload_miss_rate_feasible"] == 0.0
 
 
-def test_feasibility_is_channel_only(short_cfg, table, run):
+def test_feasibility_is_channel_only(short_cfg, table, run, estimator):
     """Feasibility depends on the channel alone, so it is the same for every scheme and does not
     change with the set of schemes simulated."""
     shares = {run[n]["crit_infeasible_share"] for n in ALL + [ORACLE]}
     assert len(shares) == 1
-    alone = simulate(short_cfg, 1000, ["Baseline"], table=table).metrics
+    alone = simulate(short_cfg, 1000, ["Baseline"], table=table, estimator=estimator).metrics
     for name in (ORACLE, "Baseline"):
         assert alone[name].keys() == run[name].keys()
         for k in run[name]:   # NaN-aware: the oracle's bits are NaN, and NaN != NaN
@@ -76,7 +77,7 @@ def test_per_user_reliability(run):
         assert m["reliability_met"] == float(m["crit_worst_violation_feasible"] <= eps), name
 
 
-def test_payload_extremes(table):
+def test_payload_extremes(table, estimator):
     """Huge bandwidth: the best beam always fits the payload. Tiny bandwidth: nothing ever does.
 
     A scheme can still miss at huge bandwidth: a stale beam can point almost exactly into a null
@@ -84,8 +85,8 @@ def test_payload_extremes(table):
     that every miss is a feasible-slot miss.
     """
     base = {"sim.T": 200, "sim.warmup": 20}
-    big = simulate(load_config(overrides={**base, "radio.prb_hz": 1e9}), 3, ["Baseline"], table=table).metrics
-    tiny = simulate(load_config(overrides={**base, "radio.prb_hz": 1e-3}), 3, ["Baseline"], table=table).metrics
+    big = simulate(load_config(overrides={**base, "radio.prb_hz": 1e9}), 3, ["Baseline"], table=table, estimator=estimator).metrics
+    tiny = simulate(load_config(overrides={**base, "radio.prb_hz": 1e-3}), 3, ["Baseline"], table=table, estimator=estimator).metrics
     assert big[ORACLE]["payload_infeasible_share"] == 0.0 and big[ORACLE]["payload_miss_rate"] == 0.0
     assert big["Baseline"]["payload_miss_rate"] == big["Baseline"]["payload_miss_rate_feasible"] < 0.01
     assert tiny["Baseline"]["payload_miss_rate"] == 1.0 and tiny[ORACLE]["payload_infeasible_share"] == 1.0
@@ -104,22 +105,22 @@ def test_deliverable_bits():
     assert deliverable_bits(np.array(3.0), 1e6, 1e-3) == pytest.approx(2000.0)
 
 
-def test_objective_reduces_to_utility(table):
+def test_objective_reduces_to_utility(table, estimator):
     """With all lambdas zero, the P1 objective (39a) is the plain utility."""
     cfg = load_config(overrides={"sim.T": 200, "sim.warmup": 20, "constraints.lambda_F": 0.0,
                                  "constraints.lambda_B": 0.0, "constraints.lambda_R": 0.0})
-    m = simulate(cfg, 3, ["Proposed", "Baseline"], table=table).metrics
+    m = simulate(cfg, 3, ["Proposed", "Baseline"], table=table, estimator=estimator).metrics
     for name in ("Proposed", "Baseline"):
         assert m[name]["objective_p1"] == pytest.approx(m[name]["utility"], abs=1e-12)
 
 
-def test_constraints_do_not_change_decisions(table):
+def test_constraints_do_not_change_decisions(table, estimator):
     """The constraints are evaluation-only: changing them must not move a single decision."""
     base = {"sim.T": 300, "sim.warmup": 20}
-    a = simulate(load_config(overrides=base), 4, ALL, table=table, record_decisions=True)
+    a = simulate(load_config(overrides=base), 4, ALL, table=table, estimator=estimator, record_decisions=True)
     b = simulate(load_config(overrides={**base, "constraints.eps_violation": 0.5, "constraints.lambda_F": 1.0,
                                         "constraints.payload_check_scale": 3.0, "radio.prb_hz": 1e3}),
-                 4, ALL, table=table, record_decisions=True)
+                 4, ALL, table=table, estimator=estimator, record_decisions=True)
     for name in ALL:
         np.testing.assert_array_equal(a.decisions[name], b.decisions[name], err_msg=name)
         assert a.metrics[name]["utility"] == b.metrics[name]["utility"]
