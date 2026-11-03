@@ -1,0 +1,15 @@
+S2: analysis of the faculty TaskVoCSI_v2 results
+
+- research/S2_analysis/: analysis script, tables T1-T7 and figures F1-F6 built from
+  the two S1 full runs (read-only), console record.
+- research/S2_faculty_results.md: interpretation: effect sizes and statistical
+  validity, where the gain comes from, sweeps, calibrator and learned-model quality,
+  limitations, implications for S3-S7.
+- research/checkpoints/S2_checkpoint.md, research/logs/S2/, README stage status.
+
+Main finding: CTVC-DP beats all five baselines significantly (+1.5 % digits,
++3.9 % surrogate); the gain vanishes when every user is served (K = 4), which our side
+track always does; the risk penalty has no measurable effect; the trained GRU matches
+persistence.
+
+Co-authored-by: Durgesh Janapareddy <durgeshjanapareddy9@gmail.com>

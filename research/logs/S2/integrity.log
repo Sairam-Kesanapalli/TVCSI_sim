@@ -1,0 +1,6 @@
+== faculty code in repo
+files=23 match=23 mismatch=0 missing=0 extra=72
+== faculty results unchanged since S1 commit
+(empty = unchanged)
+== original TVCSI_sim
+verify C:\Users\JSSR DURGESH\Documents\TVCSI_sim: 426 files in manifest -> UNCHANGED
