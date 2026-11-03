@@ -1,0 +1,21 @@
+Measured task curves: {'clean_accuracy': [0.8962962962962963, 0.95, 0.9574074074074074], 'digits_train': 1257, 'digits_test': 540, 'snr_grid_db': [-12.0, -10.0, -8.0, -6.0, -4.0, -2.0, 0.0, 2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 14.0, 16.0, 18.0, 20.0, 22.0, 24.0], 'feature_bits': [40, 80, 160], 'channel': 'uncoded coherent BPSK over AWGN with independent bit flips'}
+Step 1: train real quantized progressive CSI codec and causal beam GRU
+Step 2: fit offline task-quality and outage predictors without test access
+Validation: {'val_q_mae': 0.4904293167404891, 'val_q_rmse': 0.5494141658524607, 'val_outage_brier': 0.3206421587220478, 'val_n': 1152, 'per_mode_mae': [0.4851480805607635, 0.4921897288003976, 0.4921897288003976, 0.4921897288003976], 'per_mode_gain_corr': [-0.0027388162822345663, -0.0027388162822345663, -0.0027388162822345663]}
+Step 3: run paired held-out closed-loop tests
+       scheme  utility  utility_ci95     bits  outage  ideal_outage
+      CTVC-DP   2.5321        7.1032   5.0233  0.9128           0.0
+  CTVC-greedy   2.5321        7.1032   5.0233  0.9128           0.0
+no-importance   2.1697        2.7919   6.9767  0.9826           0.0
+      no-risk   2.4923        6.5491   5.8605  0.8372           0.0
+     periodic   2.7109        4.3654 144.0000  0.6105           0.0
+          age   2.7206        4.4886 144.0000  0.6105           0.0
+  uncertainty   1.9534        3.8597 144.0000  0.6105           0.0
+   importance   2.6042        4.3062 144.0000  0.6163           0.0
+      channel   2.5483        2.7014 144.0000  0.6105           0.0
+   prediction   1.6669        6.4795   0.0000  0.8023           0.0
+        genie   3.2700        2.4506   1.3953  0.5174           0.0
+Step 4: run sensitivity/distribution-shift sweeps (models frozen)
+Saved: results\smoke_digits_20261103 Elapsed seconds: 91.3
+
+EXIT_CODE=0 ELAPSED_SECONDS=103.5

@@ -16,17 +16,26 @@ from concurrent.futures import ProcessPoolExecutor
 import numpy as np
 import pandas as pd
 
-from tvcsi.config import feedback_budget, feedback_costs, load_config, resolve_path
+from tvcsi.config import feedback_budget, feedback_costs, load_config, resolve_path, user_bandwidth_hz
 from tvcsi.metrics import t_interval
 from tvcsi.plots import MAIN
 from tvcsi.schemes import Scheme
-from tvcsi.sim import simulate
+from tvcsi.quality import prbs_per_user
+from tvcsi.sim import ORACLE, simulate
 from tvcsi.solvers import dp_mckp, greedy_tvcsi
 from tvcsi.sweep import ONE_D_SWEEPS, get_table
 
 METRICS = [("utility", "utility", 3), ("regret", "regret", 3), ("cvar", "CVaR0.95", 3),
            ("violation_rate", "crit. violation", 3), ("bits", "bits/slot", 1),
            ("switch_rate", "switch rate", 3)]
+# Phase 1: feasibility oracle and the constraints of P1 that the schemes do not optimise.
+CONSTRAINT_METRICS = [("violation_rate", "crit. violation (all)", 3),
+                      ("violation_rate_feasible", "crit. violation (feasible)", 3),
+                      ("crit_worst_violation_feasible", "worst crit. user (feasible)", 3),
+                      ("reliability_met", "39j met (share of seeds)", 2),
+                      ("payload_miss_rate", "payload miss 39i (all)", 3),
+                      ("payload_miss_rate_feasible", "payload miss (feasible)", 3),
+                      ("objective_p1", "P1 objective 39a", 3)]
 PAIRS = [("Exact", "Optimised", "information gap"), ("Optimised", "Proposed", "greedy gap"),
          ("Proposed", "Baseline", "contribution")]
 
@@ -37,12 +46,12 @@ def fmt(mean: float, half: float, nd: int) -> str:
     return f"{mean:.{nd}f} ± {half:.{nd}f}" if np.isfinite(half) else f"{mean:.{nd}f}"
 
 
-def default_table(df: pd.DataFrame, order: list[str]) -> str:
-    lines = ["| scheme | " + " | ".join(lbl for _, lbl, _ in METRICS) + " |",
-             "|---|" + "---|" * len(METRICS)]
+def default_table(df: pd.DataFrame, order: list[str], metrics=METRICS) -> str:
+    lines = ["| scheme | " + " | ".join(lbl for _, lbl, _ in metrics) + " |",
+             "|---|" + "---|" * len(metrics)]
     for name in order:
         g = df[df["scheme"] == name]
-        cells = [fmt(*t_interval(g[m]), nd) for m, _, nd in METRICS]
+        cells = [fmt(*t_interval(g[m]), nd) for m, _, nd in metrics]
         lines.append(f"| {name} | " + " | ".join(cells) + " |")
     return "\n".join(lines)
 
@@ -135,9 +144,36 @@ def main() -> None:
           f"(C_FB_max={feedback_budget(cfg):g} bits/slot), T={cfg['sim']['T']} slots "
           f"(first {cfg['sim']['warmup']} excluded), {n_seeds} test seeds. "
           "Values are mean ± 95% t-interval half-width over seeds.", ""]
+    if cfg["quality"]["model"] == "measured":
+        L += [f"Task quality: **measured**, Q = 1 - BLER of each message type's payload over "
+              f"{prbs_per_user(cfg)} PRBs per user of a {cfg['radio']['carrier_prbs']}-PRB carrier "
+              "(5G NR PDSCH link-level simulation, data/q_curves.csv; ASSUMPTIONS.md Phase 2).", ""]
+    else:
+        L += ["Task quality: legacy logistic (spec 3.6).", ""]
     L += ["## Default configuration, all schemes", "", default_table(default, order), "",
           "`full_feedback` ignores the budget (reference only). Utility = mean over slots of "
           "sum_k U_k. Violation = fraction of (critical user, slot) pairs with Q < Q_min.", ""]
+
+    con = cfg["constraints"]
+    orc = default[default["scheme"] == ORACLE]
+    inf_share = orc["crit_infeasible_share"].mean()
+    L += ["## Feasibility oracle and the constraints of P1 (default point)", "",
+          f"`{ORACLE}` gives every user the beam with the largest **true** gain in every slot, for "
+          "free: perfect CSI everywhere, no budget. No scheme can beat it in any slot. A critical slot "
+          "is **feasible** if this oracle reaches Q >= Q_min there; otherwise every scheme violates. "
+          "Violations among feasible slots are the part a scheduler can fix. All of this is computed "
+          "after the decisions, from the true channel, and no scheme sees it.", "",
+          f"* Critical slots that are infeasible even with the true best beam: **{100 * inf_share:.1f}%**. "
+          f"Payload (39i) infeasible slots, all users: {100 * orc['payload_infeasible_share'].mean():.1f}%.",
+          f"* Constraint parameters (3GPP-cited where a standard exists; ASSUMPTIONS.md items 39-41): "
+          f"eps = {con['eps_violation']:g} (TS 38.214); payload {dict(cfg['radio']['payload_bytes'])} bytes (TS 22.185) over "
+          f"{user_bandwidth_hz(cfg) / 1e6:g} MHz per user ({cfg['radio']['carrier_prbs']} PRBs / K, TS 38.101-1); "
+          f"lambda_F = {con['lambda_F']:g}, lambda_B = {con['lambda_B']:g}, lambda_R = {con['lambda_R']:g} "
+          "(no standard value). Sensitivity to all of them: results/sensitivity.md.", "",
+          default_table(default, order + [ORACLE], CONSTRAINT_METRICS), "",
+          "'39j met' is 1 for a seed when every critical user's violation rate over its feasible slots "
+          "is <= eps. The P1 objective is utility - lambda_F bits - lambda_B sum_k s_k - lambda_R CVaR; "
+          "it is undefined (n/a) for the oracle, which uses no feedback channel.", ""]
 
     L += ["## Gap decomposition at the default point (paired by seed)", "",
           "| pair | meaning | utility difference |", "|---|---|---|"]
@@ -195,16 +231,23 @@ def main() -> None:
                  f"{pb['fb_share']:.2f}): the extra bits go mostly into higher modes for the same users, and mean "
                  f"regret moves {pa['regret']:.3f} -> {pb['regret']:.3f}. This is consistent with the estimator "
                  "valuing mode 1 at almost nothing (calibration table below).")
-    L.append(f"* Exact spends only {ex['bits'].mean():.0f} of {feedback_budget(cfg):g} bits per slot on average and "
-             f"still reaches {ex['utility'].mean():.3f}, above full feedback ({ff['utility'].mean():.3f}). The genie "
-             "skips feedback whenever the predicted beam is already right and picks the cheapest mode whose decoded "
-             "beam is right, so it is an upper bound on scheduling, not on CSI quality.")
-    L.append(f"* The critical violation rate is {viol.min():.3f}-{viol.max():.3f} (scheme means) for all four "
-             "schemes at the default point, the genie included: Q >= 0.8 for a critical user needs about 16.1 dB, above the median "
-             "best-beam SINR of about 11.3 dB (ASSUMPTIONS.md item 10). Fig 12 therefore has little dynamic range.")
-    L.append("* Optimised (exact DP on Uhat) is below Proposed (greedy on the same Uhat) at most points, although "
-             "greedy is within 0.01% of the DP optimum on Uhat itself (above). Optimising an inaccurate estimate "
-             "more exactly does not translate into higher true utility here, and each scheme's predictor history "
+    above = ex["utility"].mean() > ff["utility"].mean()
+    L.append(f"* Exact spends {ex['bits'].mean():.0f} of {feedback_budget(cfg):g} bits per slot on average and "
+             f"reaches {ex['utility'].mean():.3f}, {'above' if above else 'below'} full feedback "
+             f"({ff['utility'].mean():.3f}). The genie skips feedback whenever the predicted beam is already right "
+             "and picks the cheapest mode whose decoded beam is right, so it is an upper bound on scheduling, "
+             "not on CSI quality.")
+    feas_viol = default[default["scheme"].isin(MAIN)].groupby("scheme")["violation_rate_feasible"].mean()
+    L.append(f"* The critical violation rate is {viol.min():.3f}-{viol.max():.3f} (scheme means) for the four "
+             f"main schemes at the default point. {100 * inf_share:.1f}% of critical slots are infeasible even with "
+             "the true best beam, so every scheme violates there; over the feasible slots the rates are "
+             + ", ".join(f"{n} {feas_viol[n]:.3f}" for n in MAIN) + " (fig 12b).")
+    og = gaps[gaps["pair"] == "Optimised - Proposed"]
+    n_below = int((og["mean"] < 0).sum())
+    L.append(f"* Optimised (exact DP on Uhat) is below Proposed (greedy on the same Uhat) at {n_below} of "
+             f"{len(og)} sweep points, although greedy is within {100 * (1 - diag['ratio']):.2f}% of the DP "
+             "optimum on Uhat itself (above). Where Optimised loses, optimising an inaccurate estimate more "
+             "exactly does not translate into higher true utility, and each scheme's predictor history "
              "follows its own decisions.")
     L += [""]
 

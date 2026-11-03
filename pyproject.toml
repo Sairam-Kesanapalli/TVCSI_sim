@@ -8,6 +8,12 @@ version = "0.1.0"
 requires-python = ">=3.11"
 dependencies = ["numpy", "scipy", "matplotlib", "pandas", "pyyaml"]
 
+[project.optional-dependencies]
+# Only for re-measuring the task-quality curves (scripts/measure_q.py). The simulator itself reads
+# the committed data/q_curves.csv and needs none of this. Install torch from the CPU index first:
+#   pip install torch --index-url https://download.pytorch.org/whl/cpu
+linklevel = ["torch>=2.9.1", "sionna-no-rt==2.2.0"]
+
 [tool.setuptools.packages.find]
 where = ["src"]
 

@@ -1,0 +1,13 @@
+S0 started 2026-11-03 12:36:52
+== machine
+13th Gen Intel(R) Core(TM) i7-13620H
+RAM GB: 16
+NVIDIA GeForce RTX 4060 Laptop GPU, 8188 MiB, 592.82
+disk free GB: 107
+== original TVCSI_sim git
+25c516a Note how to regenerate the dataset
+5a3cf34 Initial commit
+uncommitted entries: 156
+== original test suite (venv tvcsi)
+....................................x...                                 [100%]
+39 passed, 1 xfailed in 25.00s

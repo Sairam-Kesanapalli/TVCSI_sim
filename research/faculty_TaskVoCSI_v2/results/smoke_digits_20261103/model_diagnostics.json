@@ -1,0 +1,28 @@
+{
+  "GRU": {
+    "accuracy": 0.25,
+    "regret": 0.5668617590915325
+  },
+  "persistence": {
+    "accuracy": 0.25,
+    "regret": 0.5668617590915325
+  },
+  "codec_1": {
+    "accuracy": 0.25,
+    "regret": 0.5668617590915325
+  },
+  "codec_2": {
+    "accuracy": 0.25,
+    "regret": 0.5668617590915325
+  },
+  "codec_3": {
+    "accuracy": 0.25,
+    "regret": 0.5668617590915325
+  },
+  "timings": {
+    "gru_ms_per_call": 1.8611740000051213,
+    "calibrator_ms_per_call": 22.04807799998889,
+    "dp_ms_per_call": 1.5438039999935427,
+    "greedy_ms_per_call": 4.894605999998021
+  }
+}

@@ -1,0 +1,7 @@
+research/README: collaborators author their own commits
+
+Everyone commits under their own git identity; commits made on behalf of Sairam and
+Durgesh keep the existing author/co-author convention. Adds shared-branch etiquette
+(pull first, one person per stage, no force-push, optional per-person branches).
+
+Co-authored-by: Durgesh Janapareddy <durgeshjanapareddy9@gmail.com>

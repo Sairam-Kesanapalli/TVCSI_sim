@@ -1,0 +1,29 @@
+{
+  "quick": true,
+  "seconds": 28.133345300000656,
+  "nn_training": {
+    "codec_loss": 0.6337374250094095,
+    "predictor_loss": 0.35003118051422966,
+    "n_codec": 768,
+    "n_predictor": 2064
+  },
+  "measured_task": {},
+  "calibration_validation": {
+    "val_q_mae": 0.49108901167506935,
+    "val_q_rmse": 0.554743175013118,
+    "val_outage_brier": 0.34559806775480617,
+    "val_n": 1152,
+    "per_mode_mae": [
+      0.48285590276084034,
+      0.4938333813131457,
+      0.4938333813131457,
+      0.4938333813131457
+    ],
+    "per_mode_gain_corr": [
+      0.015164056325981126,
+      0.015164056325981126,
+      0.015164056325981126
+    ]
+  },
+  "warning": "Synthetic channels; quality is a measured digit classification lookup only with --measured-task, otherwise a sigmoid surrogate. Fixed-power orthogonal-RB restricted system; full original P1 not implemented."
+}

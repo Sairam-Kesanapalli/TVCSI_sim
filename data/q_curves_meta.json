@@ -1,0 +1,66 @@
+{
+ "link_plan": {
+  "pdsch_symbols": 12,
+  "dmrs_re_per_prb": 12,
+  "mcs_table": 1,
+  "payload_bytes": {
+   "critical": 1200,
+   "normal": 300,
+   "background": 50
+  }
+ },
+ "carrier_prbs": 270,
+ "link_level": {
+  "bp_iterations": 20,
+  "batch": 100,
+  "min_errors": 100,
+  "max_blocks": 1000,
+  "stop_bler": 0.002,
+  "snr_step_db": 0.25,
+  "snr_min_db": -15.0,
+  "snr_max_db": 40.0,
+  "seed": 7,
+  "parts_dir": "data/q_curves_parts",
+  "carrier_candidates": [
+   106,
+   133,
+   160,
+   216,
+   270
+  ],
+  "feasibility_target": 0.9,
+  "select": {
+   "min_errors": 50,
+   "max_blocks": 500,
+   "snr_step_db": 0.5,
+   "stop_bler": 0.01
+  }
+ },
+ "sionna": "2.2.0",
+ "torch": "2.11.0+cu128",
+ "python": "3.13.2",
+ "device": "NVIDIA GeForce RTX 4060 Laptop GPU",
+ "seconds_this_run": 3765,
+ "curves_measured_this_run": 18,
+ "seeds": {
+  "critical|9600b|135prb|12sym|12dmrs|mcs_t1": 81178,
+  "normal|2400b|135prb|12sym|12dmrs|mcs_t1": 76557,
+  "background|400b|135prb|12sym|12dmrs|mcs_t1": 88306,
+  "critical|9600b|45prb|12sym|12dmrs|mcs_t1": 42962,
+  "critical|9600b|67prb|12sym|12dmrs|mcs_t1": 49856,
+  "critical|9600b|33prb|12sym|12dmrs|mcs_t1": 3290,
+  "critical|9600b|22prb|12sym|12dmrs|mcs_t1": 77921,
+  "critical|9600b|16prb|12sym|12dmrs|mcs_t1": 98621,
+  "normal|2400b|67prb|12sym|12dmrs|mcs_t1": 43425,
+  "background|400b|67prb|12sym|12dmrs|mcs_t1": 53211,
+  "normal|2400b|45prb|12sym|12dmrs|mcs_t1": 16463,
+  "background|400b|45prb|12sym|12dmrs|mcs_t1": 54509,
+  "normal|2400b|33prb|12sym|12dmrs|mcs_t1": 64119,
+  "background|400b|33prb|12sym|12dmrs|mcs_t1": 20997,
+  "normal|2400b|22prb|12sym|12dmrs|mcs_t1": 31936,
+  "background|400b|22prb|12sym|12dmrs|mcs_t1": 78366,
+  "normal|2400b|16prb|12sym|12dmrs|mcs_t1": 87900,
+  "background|400b|16prb|12sym|12dmrs|mcs_t1": 22850
+ },
+ "chain": "TB CRC, CB segmentation + CRC, LDPC, rate matching, scrambling, QAM, AWGN, APP demapper, BP decoder; block error = any information bit wrong"
+}

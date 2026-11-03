@@ -13,15 +13,61 @@ import numpy as np
 
 from .channel import generate_channels, pilot_estimate
 from .codebook import beam_gains, dft_codebook
-from .config import db2lin, feedback_budget, feedback_costs
-from .importance import CRITICAL, assign_types, gamma0_per_user, generate_importance
-from .link import beam_regret, select_beam, sinr, task_quality, task_utility
-from .metrics import cvar, semantic_loss, switch_indicator
+from .config import db2lin, feedback_budget, feedback_costs, user_bandwidth_hz
+from .importance import CRITICAL, assign_types, generate_importance, per_type
+from .link import beam_regret, deliverable_bits, select_beam, sinr, task_utility
+from .metrics import cvar, objective_p1, semantic_loss, switch_indicator
 from .models import build_models
+from .quality import QualityModel, build_quality
 from .schemes import DecisionInputs, Scheme, build_scheme
 from .tvcsi import TVCSITable, expected_utility, fit_table, gamma_ref
 
 _STREAMS = ("channel", "importance", "pilot", "encoder", "policy")
+
+# Name of the evaluation-only best-beam oracle row in every result (not a scheme: it never decides).
+ORACLE = "BestBeam_oracle"
+
+
+@dataclass
+class EvalContext:
+    """Evaluation-only quantities of one run (true channel + constraint parameters).
+
+    Built after the slot loop from the true channel. No scheme ever receives it.
+    """
+    crit: np.ndarray              # [K] bool, critical users
+    q_min: float
+    eps: float                    # epsilon_k of Eq. 34 / 39j
+    crit_feasible: np.ndarray     # [T, K] bool: critical AND the true best beam reaches Q >= Q_min
+    payload_bits: np.ndarray      # [K] semantic payload S_k per slot (Eq. 39i)
+    payload_feasible: np.ndarray  # [T, K] bool: the true best beam can deliver S_k in the slot
+    bandwidth_hz: float
+    Ts_s: float
+    lambdas: tuple[float, float, float]   # (lambda_F, lambda_B, lambda_R) of Eq. 39a
+
+
+def best_beam_oracle(g_true_all: np.ndarray, snr_lin: float, M: int,
+                     quality: QualityModel) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """True best-beam oracle: for every user and slot, the codebook beam with the largest TRUE gain.
+
+    This is perfect, free, instantaneous CSI for everyone, so no scheme can do better in any slot
+    (Q is increasing in gamma, gamma in the beam gain). Returns (beam [T, K], gamma [T, K], Q [T, K]).
+    """
+    beam = g_true_all.argmax(axis=-1).T
+    gamma = (snr_lin * g_true_all.max(axis=-1) / M).T
+    return beam, gamma, quality(gamma, user_axis=-1)
+
+
+def eval_context(cfg: dict, real: "Realization", gamma_best: np.ndarray, Q_best: np.ndarray) -> EvalContext:
+    con = cfg["constraints"]
+    crit = real.types == CRITICAL
+    q_min = cfg["quality"]["q_min"]
+    pay = 8.0 * con["payload_check_scale"] * per_type(cfg["radio"]["payload_bytes"], real.types)  # S_k [bits]
+    W, Ts = user_bandwidth_hz(cfg), cfg["channel"]["Ts_s"]
+    return EvalContext(
+        crit=crit, q_min=q_min, eps=con["eps_violation"],
+        crit_feasible=crit[None, :] & (Q_best >= q_min),
+        payload_bits=pay, payload_feasible=deliverable_bits(gamma_best, W, Ts) >= pay[None, :],
+        bandwidth_hz=W, Ts_s=Ts, lambdas=(con["lambda_F"], con["lambda_B"], con["lambda_R"]))
 
 
 @dataclass
@@ -31,7 +77,6 @@ class Realization:
     hhat: np.ndarray    # [K, T, M] pilot estimate
     v: np.ndarray       # [K, T] importance
     types: np.ndarray   # [K] message type
-    gamma0: np.ndarray  # [K] quality threshold [dB]
 
 
 @dataclass
@@ -54,7 +99,7 @@ def make_realization(cfg: dict, rngs: dict[str, np.random.Generator]) -> Realiza
     hhat = pilot_estimate(h, snr_pilot, rngs["pilot"])
     types = assign_types(K, cfg["importance"]["crit_share"])
     v = generate_importance(cfg, types, rngs["importance"])
-    return Realization(h, hhat, v, types, gamma0_per_user(cfg, types))
+    return Realization(h, hhat, v, types)
 
 
 def simulate(cfg: dict, seed: int, scheme_names: list[str | Scheme], table: TVCSITable | None = None,
@@ -73,29 +118,28 @@ def simulate(cfg: dict, seed: int, scheme_names: list[str | Scheme], table: TVCS
     n_fb = len(cfg["feedback"]["code_len"])
     costs, budget = feedback_costs(cfg), feedback_budget(cfg)
     snr_lin, eps = db2lin(cfg["link"]["snr_db"]), cfg["link"]["eps"]
-    s_db, q_min = cfg["quality"]["s_db"], cfg["quality"]["q_min"]
     L_h = cfg["feedback"]["history_len"]
 
     W = dft_codebook(M, B)
     rngs = rng_streams(seed)
     real = make_realization(cfg, rngs)
+    quality = build_quality(cfg, real.types)                         # Q_k(gamma) of every user
     encoder, decoder, make_predictor = build_models(cfg, W, rngs["encoder"])
     schemes = [n if isinstance(n, Scheme) else build_scheme(n, cfg, rngs["policy"]) for n in scheme_names]
     if table is None and any(s.estimator for s in schemes):
         raise ValueError("a TVCSI table is required for estimator-based schemes")
     predictors = [make_predictor(K) for _ in schemes]
-    crit = real.types == CRITICAL
     users = np.arange(K)
-    g0_col = real.gamma0[:, None]
 
     # Raw per-slot records; every metric is computed from them after the loop.
     rec = {s.name: dict(modes=np.zeros((T, K), dtype=np.int8), beam=np.zeros((T, K), dtype=np.int16),
-                        Q=np.zeros((T, K)), d=np.zeros((T, K))) for s in schemes}
+                        Q=np.zeros((T, K)), d=np.zeros((T, K)), gamma=np.zeros((T, K))) for s in schemes}
     samples_c, samples_d = [], []
     g_true_all = beam_gains(real.h, W)                                 # [K, T, B]
     beams = np.empty((K, n_fb + 1), dtype=np.int64)
     d_all = np.empty((K, n_fb + 1))
     Q_all = np.empty((K, n_fb + 1))
+    gamma_all = np.empty((K, n_fb + 1))
 
     for t in range(T):
         # Step 1-3: shared quantities. Fresh-feedback outcomes depend only on the channel, so
@@ -105,8 +149,10 @@ def simulate(cfg: dict, seed: int, scheme_names: list[str | Scheme], table: TVCS
         g_true = g_true_all[:, t]
         b_fb = select_beam(ghat_fb).T                                  # [K, M_f]
         d_fb = beam_regret(g_true[:, None, :].repeat(n_fb, 1), b_fb, eps)
-        Q_fb = task_quality(snr_lin * np.take_along_axis(g_true, b_fb, 1) / M, g0_col, s_db)
-        shared = SimpleNamespace(t=t, g_true=g_true, ghat_fb=ghat_fb, b_fb=b_fb, d_fb=d_fb, Q_fb=Q_fb)
+        gamma_fb = snr_lin * np.take_along_axis(g_true, b_fb, 1) / M
+        Q_fb = quality(gamma_fb, user_axis=0)
+        shared = SimpleNamespace(t=t, g_true=g_true, ghat_fb=ghat_fb, b_fb=b_fb, d_fb=d_fb, Q_fb=Q_fb,
+                                 gamma_fb=gamma_fb)
         if tamper is not None:
             tamper(shared)
         v = real.v[:, t]
@@ -117,14 +163,15 @@ def simulate(cfg: dict, seed: int, scheme_names: list[str | Scheme], table: TVCS
             b0 = select_beam(ghat0)
             beams[:, 0], beams[:, 1:] = b0, shared.b_fb
             d_all[:, 0], d_all[:, 1:] = beam_regret(shared.g_true, b0, eps), shared.d_fb
-            Q_all[:, 0] = task_quality(sinr(shared.g_true, b0, snr_lin, M), real.gamma0, s_db)
+            gamma_all[:, 0], gamma_all[:, 1:] = sinr(shared.g_true, b0, snr_lin, M), shared.gamma_fb
+            Q_all[:, 0] = quality(gamma_all[:, 0])
             Q_all[:, 1:] = shared.Q_fb
 
             # Step 5-6: estimate utilities from gNB-side information only, then decide.
             gref = gamma_ref(ghat0, snr_lin, M)
             U_hat = None
             if scheme.estimator:
-                U_hat = expected_utility(table, gref, conf, v, real.gamma0, s_db,
+                U_hat = expected_utility(table, gref, conf, v, quality,
                                          use_confidence=scheme.estimator != "no_confidence",
                                          use_importance=scheme.estimator != "no_importance")
             U_true = v[:, None] * Q_all if scheme.uses_truth else None
@@ -136,6 +183,7 @@ def simulate(cfg: dict, seed: int, scheme_names: list[str | Scheme], table: TVCS
             r = rec[scheme.name]
             r["modes"][t], r["beam"][t] = modes, beams[users, modes]
             r["Q"][t], r["d"][t] = Q_all[users, modes], d_all[users, modes]
+            r["gamma"][t] = gamma_all[users, modes]
             if collect_samples:
                 samples_c.append(conf)
                 samples_d.append(d_all.copy())
@@ -144,48 +192,96 @@ def simulate(cfg: dict, seed: int, scheme_names: list[str | Scheme], table: TVCS
             held = np.where((modes > 0)[:, None], shared.ghat_fb[np.maximum(modes - 1, 0), users], ghat0)
             predictors[i].update(held, modes > 0)
 
-    res = SimResult(decisions={n: r["modes"] for n, r in rec.items()} if record_decisions else {})
-    for s in schemes:
-        log = slot_log(rec[s.name], real.v.T, costs, crit, q_min)
-        res.metrics[s.name] = summarize(log, warmup, K, int(crit.sum()), cfg["metrics"]["cvar_alpha"])
+    # Evaluation only, after every decision has been taken: the true best-beam oracle and the
+    # constraints of P1 that the schemes do not optimise (39a penalties, 39i payload, 39j).
+    b_best, gamma_best, Q_best = best_beam_oracle(g_true_all, snr_lin, M, quality)
+    ev = eval_context(cfg, real, gamma_best, Q_best)
+    rec[ORACLE] = dict(modes=None, beam=b_best, Q=Q_best, d=np.zeros((T, K)), gamma=gamma_best)
+
+    alpha = cfg["metrics"]["cvar_alpha"]
+    res = SimResult(decisions={s.name: rec[s.name]["modes"] for s in schemes} if record_decisions else {})
+    for name in [s.name for s in schemes] + [ORACLE]:
+        log = slot_log(rec[name], real.v.T, costs, ev)
+        res.metrics[name] = summarize(log, warmup, K, ev, alpha)
         if keep_traces:
-            res.traces[s.name] = {q: a[warmup:] for q, a in log.items()}
+            res.traces[name] = {q: a[warmup:] for q, a in log.items()}
     if collect_samples:
         res.samples = (np.concatenate(samples_c), np.concatenate(samples_d))
     return res
 
 
-def slot_log(r: dict, v: np.ndarray, costs: np.ndarray, crit: np.ndarray, q_min: float) -> dict:
-    """Per-slot system quantities from the raw records of one scheme (v is [T, K])."""
-    switch = np.zeros(len(v))
+def slot_log(r: dict, v: np.ndarray, costs: np.ndarray, ev: EvalContext) -> dict:
+    """Per-slot system quantities from the raw records of one scheme (v is [T, K]).
+
+    r["modes"] is None for the oracle row, which uses no feedback channel: its bits are NaN.
+    """
+    T = len(v)
+    switch = np.zeros(T)
     switch[1:] = switch_indicator(r["beam"][1:], r["beam"][:-1]).mean(axis=1)   # Eq. 38
+    viol = (r["Q"] < ev.q_min) & ev.crit[None, :]                                 # Eq. 34 events
+    payload_ok = deliverable_bits(r["gamma"], ev.bandwidth_hz, ev.Ts_s) >= ev.payload_bits[None, :]
+    if r["modes"] is None:
+        bits, fb_users = np.full(T, np.nan), np.full(T, np.nan)
+    else:
+        bits = costs[r["modes"]].sum(axis=1).astype(float)
+        fb_users = (r["modes"] > 0).sum(axis=1).astype(float)
     return {
         "utility": task_utility(v, r["Q"]).sum(axis=1),                          # sum_k U_k (Eq. 21)
         "loss": semantic_loss(v, r["Q"]),                                        # Eq. 36
         "regret": r["d"].mean(axis=1),
         "switch": switch,
-        "bits": costs[r["modes"]].sum(axis=1).astype(float),
-        "violations": (r["Q"][:, crit] < q_min).sum(axis=1).astype(float),       # Eq. 34 events
-        "fb_users": (r["modes"] > 0).sum(axis=1).astype(float),
+        "bits": bits,
+        "violations": viol.sum(axis=1).astype(float),
+        "violations_feasible": (viol & ev.crit_feasible).sum(axis=1).astype(float),
+        "payload_miss": (~payload_ok).sum(axis=1).astype(float),                 # Eq. 39i events
+        "payload_miss_feasible": (~payload_ok & ev.payload_feasible).sum(axis=1).astype(float),
+        "fb_users": fb_users,
+        "viol_feasible_k": viol & ev.crit_feasible,                              # [T, K], for 39j per user
     }
 
 
-def summarize(log: dict, warmup: int, K: int, n_crit: int, alpha: float) -> dict:
-    """Per-run metrics over the slots after warm-up (spec 3.9 and section 8)."""
+def summarize(log: dict, warmup: int, K: int, ev: EvalContext, alpha: float) -> dict:
+    """Per-run metrics over the slots after warm-up (spec 3.9 and section 8, plus Eq. 39 checks).
+
+    Feasible = the true best beam meets the requirement in that slot. A violation in an
+    infeasible slot is unavoidable for every scheme; violations among feasible slots are the
+    scheduler's (or the CSI's) fault.
+    """
     w = slice(warmup, None)
     utility, bits = log["utility"][w].mean(), log["bits"][w].mean()
     n_slots = len(log["utility"][w])
+    n_crit = int(ev.crit.sum())
+    feas = ev.crit_feasible[w]
+    n_feas = int(feas.sum())
+    pay_feas = int(ev.payload_feasible[w].sum())
+
+    # Eq. 39j is per critical user: Pr[Q_k < Q_min] <= eps_k. Evaluated over each user's feasible slots.
+    fk = feas[:, ev.crit].sum(axis=0)
+    vk = log["viol_feasible_k"][w][:, ev.crit].sum(axis=0)
+    rates_k = vk[fk > 0] / fk[fk > 0]
+
+    switch_rate = log["switch"][w].mean()
+    c = cvar(log["loss"][w], alpha)
     return {
         "utility": utility,
         "utility_per_user": utility / K,
         "regret": log["regret"][w].mean(),
-        "switch_rate": log["switch"][w].mean(),
+        "switch_rate": switch_rate,
         "bits": bits,
         "utility_per_bit": utility / bits if bits > 0 else np.nan,
         "loss": log["loss"][w].mean(),
-        "cvar": cvar(log["loss"][w], alpha),
+        "cvar": c,
         "violation_rate": log["violations"][w].sum() / (n_crit * n_slots) if n_crit else np.nan,
         "fb_share": log["fb_users"][w].mean() / K,
+        # --- Phase 1: feasibility oracle and the missing constraints of P1 ---
+        "crit_infeasible_share": 1.0 - n_feas / (n_crit * n_slots) if n_crit else np.nan,
+        "violation_rate_feasible": log["violations_feasible"][w].sum() / n_feas if n_feas else np.nan,
+        "crit_worst_violation_feasible": rates_k.max() if len(rates_k) else np.nan,
+        "reliability_met": float(np.all(rates_k <= ev.eps)) if len(rates_k) else np.nan,
+        "payload_miss_rate": log["payload_miss"][w].sum() / (K * n_slots),
+        "payload_infeasible_share": 1.0 - pay_feas / (K * n_slots),
+        "payload_miss_rate_feasible": log["payload_miss_feasible"][w].sum() / pay_feas if pay_feas else np.nan,
+        "objective_p1": objective_p1(utility, bits, K * switch_rate, c, *ev.lambdas),
     }
 
 

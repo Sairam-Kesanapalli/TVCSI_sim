@@ -1,0 +1,14 @@
+Phase 1 and Phase 2: feasibility oracle, P1 constraints, measured 5G NR task quality
+
+Baseline of the combined side track (stage S0).
+
+Phase 1: true best-beam feasibility oracle; feasible/infeasible split of critical
+violations; Eq. 39a/39i/39j constraint metrics with 3GPP-cited values; sensitivity
+analysis (scripts/sensitivity.py).
+
+Phase 2: task quality Q = 1 - BLER measured with a 5G NR PDSCH link-level simulation
+(scripts/measure_q.py, Sionna 2.2); carrier re-selected (50 MHz); 18 measured curves
+in data/q_curves.csv, cross-checked against Sionna's tables and the finite-blocklength
+limit; legacy logistic Q kept as quality.model: logistic.
+
+Co-authored-by: Durgesh Janapareddy <durgeshjanapareddy9@gmail.com>

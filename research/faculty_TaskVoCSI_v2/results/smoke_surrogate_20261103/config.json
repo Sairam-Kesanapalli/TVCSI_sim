@@ -1,0 +1,65 @@
+{
+  "M": 16,
+  "B": 16,
+  "K": 8,
+  "T": 48,
+  "fc_hz": 3500000000.0,
+  "slot_s": 0.001,
+  "speed_kmh": 25.0,
+  "paths": 4,
+  "angle_walk": 0.00012,
+  "snr_db": 20.0,
+  "pilot_snr_db": 20.0,
+  "n_rb": 5,
+  "rb_hz": 1000000.0,
+  "feedback_bits": [
+    0,
+    24,
+    48,
+    96
+  ],
+  "budget_bits": 144,
+  "crit_share": 0.25,
+  "critical_qmin": 0.55,
+  "risk_penalty": 0.12,
+  "bit_penalty": 5e-05,
+  "switch_penalty": 0.002,
+  "q_slope_db": 3.5,
+  "quality_source": "surrogate",
+  "quality_table": "",
+  "representations": [
+    [
+      350,
+      0.58,
+      -5.0
+    ],
+    [
+      1100,
+      0.83,
+      -1.0
+    ],
+    [
+      2800,
+      1.0,
+      3.0
+    ]
+  ],
+  "history": 5,
+  "train_seeds": [
+    101,
+    102
+  ],
+  "val_seeds": [
+    201
+  ],
+  "test_seeds": [
+    301,
+    302
+  ],
+  "warmup": 5,
+  "codec_epochs": 3,
+  "predictor_epochs": 3,
+  "batch_size": 256,
+  "val_samples": 6000,
+  "quick": true
+}

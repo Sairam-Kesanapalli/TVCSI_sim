@@ -1,0 +1,135 @@
+
+===== T1_default_summary.csv =====
+      run        scheme  utility  utility_ci95  bits  outage  ideal_outage  regret  cvar95    switch  served  utility_per_100bits  rel_to_best_baseline_pct  rel_to_genie_pct
+   digits       CTVC-DP    3.598       0.06354 137.5  0.4317     0.0001923  0.2215   3.074    0.1639       5                2.617                     1.523            -7.551
+   digits   CTVC-greedy    3.609       0.06424 136.2  0.4329     0.0001923  0.2159   2.999    0.1628       5                 2.65                     1.847            -7.256
+   digits no-importance    2.891       0.05944   133  0.4848     0.0001923  0.1728   3.421    0.1417       5                2.173                    -18.41            -25.71
+   digits       no-risk    3.605       0.06225 136.7  0.4277     0.0001923  0.2188   3.032    0.1642       5                2.638                     1.718            -7.373
+   digits      periodic    3.486       0.07544   144  0.4435     0.0001923  0.2849   3.234    0.1276       5                2.421                    -1.627            -10.42
+   digits           age    3.492       0.07274   144  0.4454     0.0001923  0.2622   3.295    0.1562       5                2.425                    -1.458            -10.27
+   digits   uncertainty     3.52       0.07272   144  0.4354     0.0001923   0.314   3.158   0.07462       5                2.444                   -0.6827            -9.559
+   digits    importance    3.544       0.07073   144   0.436     0.0001923   0.268   3.125    0.1465       5                2.461                         0            -8.938
+   digits       channel     3.54       0.07148   144  0.4362     0.0001923  0.3138   3.213    0.0788       5                2.458                   -0.1211            -9.048
+   digits    prediction    2.501        0.2507     0  0.5538     0.0001923  0.6074   4.508 4.808e-05       5                  NaN                    -29.42            -35.73
+   digits         genie    3.892       0.04301 16.08  0.3727     0.0001923  0.2342   2.236   0.07029       5                 24.2                     9.815                 0
+surrogate       CTVC-DP    3.526        0.0753 143.1  0.4442     0.0001923  0.1994   3.171    0.1641       5                2.465                     3.929            -9.274
+surrogate   CTVC-greedy     3.53       0.07406 142.6  0.4506     0.0001923  0.1972   3.115    0.1686       5                2.476                     4.046            -9.172
+surrogate no-importance    2.883        0.0703 142.4  0.4821     0.0001923  0.1495   3.487    0.1441       5                2.024                    -15.02            -25.82
+surrogate       no-risk    3.519       0.07488   143  0.4427     0.0001923  0.1991   3.155    0.1664       5                2.461                     3.737            -9.441
+surrogate      periodic      3.3       0.07987   144  0.4665     0.0001923  0.2748   3.503    0.1232       5                2.292                    -2.711            -15.07
+surrogate           age    3.355       0.07817   144  0.4617     0.0001923  0.2489   3.423    0.1491       5                 2.33                    -1.117            -13.68
+surrogate   uncertainty     3.26       0.08707   144   0.465     0.0001923  0.3088   3.596   0.06793       5                2.264                    -3.903            -16.11
+surrogate    importance    3.392       0.08316   144  0.4631     0.0001923  0.2574   3.364    0.1409       5                2.356                         0             -12.7
+surrogate       channel    3.296       0.08598   144  0.4675     0.0001923   0.309     3.6   0.07106       5                2.289                    -2.841            -15.18
+surrogate    prediction    2.046        0.2443     0  0.6158     0.0001923  0.6074   5.047 4.808e-05       5                  NaN                     -39.7            -47.36
+surrogate         genie    3.886       0.04653 43.99  0.3713     0.0001923 0.07534   2.223    0.1283       5                8.833                     14.55                 0
+
+===== T2_paired.csv =====
+      run proposed      baseline  n  mean_difference  ci95_halfwidth  p_uncorrected    p_holm  rel_diff_pct
+   digits  CTVC-DP no-importance 20           0.7065         0.05795      3.644e-16  3.28e-15         24.44
+   digits  CTVC-DP    prediction 20            1.096          0.2242      3.606e-09 2.885e-08         43.84
+   digits  CTVC-DP           age 20           0.1056         0.03287       1.99e-06 1.393e-05         3.025
+   digits  CTVC-DP      periodic 20           0.1116         0.04637      7.315e-05 0.0004389         3.201
+   digits  CTVC-DP   uncertainty 20          0.07815         0.03562      0.0001989 0.0009943          2.22
+   digits  CTVC-DP    importance 20          0.05396         0.03036       0.001453  0.005813         1.523
+   digits  CTVC-DP       channel 20          0.05825         0.03847       0.005051   0.01515         1.646
+   digits  CTVC-DP   CTVC-greedy 20         -0.01149         0.01486          0.122     0.244       -0.3184
+   digits  CTVC-DP       no-risk 20        -0.006931         0.01625         0.3833    0.3833       -0.1923
+surrogate  CTVC-DP no-importance 20           0.6429         0.05537      8.988e-16  8.09e-15          22.3
+surrogate  CTVC-DP    prediction 20             1.48          0.2179      1.409e-11 1.127e-10         72.34
+surrogate  CTVC-DP           age 20           0.1712         0.02735      5.794e-11 4.056e-10         5.104
+surrogate  CTVC-DP      periodic 20           0.2253         0.04253      9.733e-10  5.84e-09         6.826
+surrogate  CTVC-DP   uncertainty 20           0.2657         0.05199      1.759e-09 8.797e-09         8.151
+surrogate  CTVC-DP    importance 20           0.1333         0.03025      1.906e-08 7.623e-08         3.929
+surrogate  CTVC-DP       channel 20           0.2297         0.05747        8.6e-08  2.58e-07         6.968
+surrogate  CTVC-DP       no-risk 20         0.006503         0.01687         0.4298    0.8596        0.1848
+surrogate  CTVC-DP   CTVC-greedy 20        -0.003947          0.0142         0.5675    0.8596       -0.1118
+
+===== T3_seed_wins.csv =====
+      run      baseline  n_seeds  n_wins  frac_wins  diff_min  diff_median  diff_max
+   digits      periodic       20      17       0.85  -0.01673       0.1026    0.2806
+   digits           age       20      18        0.9  -0.03159       0.1082    0.2185
+   digits   uncertainty       20      16        0.8   -0.0475      0.07907     0.239
+   digits    importance       20      15       0.75  -0.07652      0.04676    0.1577
+   digits       channel       20      16        0.8   -0.1049       0.0677    0.1608
+   digits    prediction       20      19       0.95   -0.0175        1.118     1.849
+   digits no-importance       20      20          1    0.4502       0.7165    0.8814
+   digits       no-risk       20       7       0.35  -0.06827     -0.01683   0.07092
+   digits   CTVC-greedy       20       8        0.4  -0.08579     -0.01562   0.04385
+surrogate      periodic       20      20          1   0.03028       0.2165    0.3997
+surrogate           age       20      20          1    0.0787       0.1754    0.2746
+surrogate   uncertainty       20      20          1   0.07492       0.2482    0.4927
+surrogate    importance       20      20          1   0.03591        0.127    0.2841
+surrogate       channel       20      20          1  0.004508       0.2329    0.4061
+surrogate    prediction       20      20          1    0.2865        1.535     2.176
+surrogate no-importance       20      20          1     0.454       0.6158    0.9182
+surrogate       no-risk       20      11       0.55  -0.05991     0.003769   0.09094
+surrogate   CTVC-greedy       20       8        0.4  -0.04345     -0.01199   0.05472
+
+===== T4_sweeps_ctvc_vs_best.csv =====
+      run        axis   x  ctvc_utility  ctvc_ci95 best_baseline  best_utility  best_ci95     diff  genie_utility  ctvc_bits  best_bits  ctvc_wins  ci_separated
+   digits budget_bits  48         3.469     0.1359       channel          3.48     0.2622 -0.01109          3.825      47.93         48      False         False
+   digits budget_bits  96         3.584     0.1313    importance         3.433     0.1768   0.1513          3.832       94.6         96       True         False
+   digits budget_bits 144         3.601     0.1452       channel          3.54     0.1678  0.06133          3.833      138.9        144       True         False
+   digits budget_bits 192         3.628     0.1193   uncertainty         3.564      0.156  0.06371          3.834      176.5        192       True         False
+   digits   speed_kmh   5         3.589     0.4127      periodic         3.573     0.4412  0.01691          3.791      140.3        144       True         False
+   digits   speed_kmh  25         3.601     0.1452       channel          3.54     0.1678  0.06133          3.833      138.9        144       True         False
+   digits   speed_kmh  50         3.509     0.1361       channel         3.485     0.1268  0.02357          3.831      138.4        144       True         False
+   digits           K   4         2.369     0.2612   uncertainty         2.364     0.2555 0.005012          2.499      122.2        144       True         False
+   digits           K   8         3.601     0.1452       channel          3.54     0.1678  0.06133          3.833      138.9        144       True         False
+   digits           K  12         3.996    0.07877    importance         3.886     0.1351   0.1104           4.24      139.6        144       True         False
+   digits      snr_db  12         3.053     0.2716    importance         2.821     0.2158   0.2321          3.651      143.9        144       True         False
+   digits      snr_db  20         3.601     0.1452       channel          3.54     0.1678  0.06133          3.833      138.9        144       True         False
+   digits      snr_db  28          3.78    0.09152       channel         3.792    0.09823 -0.01226          3.847      135.7        144      False         False
+surrogate budget_bits  48         3.214     0.2789    importance          3.23     0.2336  -0.0157           3.79         48         48      False         False
+surrogate budget_bits  96         3.405     0.1746    importance         3.177     0.2429   0.2281          3.814      95.89         96       True         False
+surrogate budget_bits 144         3.512     0.1632    importance          3.32     0.1684   0.1919          3.818      143.4        144       True         False
+surrogate budget_bits 192          3.55     0.1805           age         3.338     0.1463   0.2112          3.818      188.3        192       True         False
+surrogate   speed_kmh   5         3.476     0.5314           age         3.453     0.5419  0.02287          3.757      143.6        144       True         False
+surrogate   speed_kmh  25         3.512     0.1632    importance          3.32     0.1684   0.1919          3.818      143.4        144       True         False
+surrogate   speed_kmh  50         3.423     0.1601       channel         3.207     0.1731   0.2165          3.825        143        144       True         False
+surrogate           K   4         2.294      0.304   uncertainty         2.274     0.2836  0.01953          2.491        140        144       True         False
+surrogate           K   8         3.512     0.1632    importance          3.32     0.1684   0.1919          3.818      143.4        144       True         False
+surrogate           K  12         3.915    0.09638    importance         3.737     0.1891   0.1773          4.256        143        144       True         False
+surrogate      snr_db  12         2.454     0.1499           age         2.306     0.1503   0.1486          3.052        144        144       True         False
+surrogate      snr_db  20         3.512     0.1632    importance          3.32     0.1684   0.1919          3.818      143.4        144       True         False
+surrogate      snr_db  28         3.862    0.09631       channel         3.843      0.121  0.01843           3.99      142.4        144       True         False
+
+===== T5_calibration.csv =====
+      run  val_q_mae  val_q_rmse  val_outage_brier  val_gain_corr_m1  val_gain_corr_m2  val_gain_corr_m3  n_test_seeds  test_mae_mean  test_mae_std  test_brier_mean  test_brier_std  test_gain_corr_m1_mean  test_gain_corr_m1_std  test_gain_corr_m2_mean  test_gain_corr_m2_std  test_gain_corr_m3_mean  test_gain_corr_m3_std
+   digits     0.1173      0.2614           0.07495            0.2144            0.2067            0.2397            20         0.1127       0.02316          0.07984         0.01952                  0.1239                 0.0803                  0.1438                0.06075                  0.1636                0.06627
+surrogate     0.1641      0.2893           0.09571            0.2394            0.2441            0.2706            20         0.1588       0.02591           0.1015         0.02154                  0.1553                 0.1088                  0.1833                0.04708                  0.1998                0.05545
+
+===== T6_diagnostics.csv =====
+      run                  model  accuracy  regret  timing_ms
+   digits                    GRU    0.6433  0.1931        NaN
+   digits            persistence    0.6337  0.1953        NaN
+   digits                codec_1    0.7471  0.1132        NaN
+   digits                codec_2    0.7827 0.08551        NaN
+   digits                codec_3    0.7904 0.09301        NaN
+   digits        gru_ms_per_call       NaN     NaN      2.453
+   digits calibrator_ms_per_call       NaN     NaN      19.35
+   digits         dp_ms_per_call       NaN     NaN      1.339
+   digits     greedy_ms_per_call       NaN     NaN      3.586
+surrogate                    GRU    0.6433  0.1931        NaN
+surrogate            persistence    0.6337  0.1953        NaN
+surrogate                codec_1    0.7471  0.1132        NaN
+surrogate                codec_2    0.7827 0.08551        NaN
+surrogate                codec_3    0.7904 0.09301        NaN
+surrogate        gru_ms_per_call       NaN     NaN      2.602
+surrogate calibrator_ms_per_call       NaN     NaN      20.84
+surrogate         dp_ms_per_call       NaN     NaN       1.35
+surrogate     greedy_ms_per_call       NaN     NaN      3.615
+
+===== T7_risk_effect.csv =====
+      run  metric  n  ctvc_mean  norisk_mean  mean_diff  ci95_halfwidth
+   digits utility 20      3.598        3.605  -0.006931         0.01625
+   digits  outage 20     0.4317       0.4277   0.004038        0.005825
+   digits    bits 20      137.5        136.7     0.7846          0.7272
+   digits  cvar95 20      3.074        3.032    0.04189         0.05403
+surrogate utility 20      3.526        3.519   0.006503         0.01687
+surrogate  outage 20     0.4442       0.4427   0.001538        0.007042
+surrogate    bits 20      143.1          143    0.08308          0.2782
+surrogate  cvar95 20      3.171        3.155    0.01582          0.0421
+
+Figures: ['F1_default_utility.png', 'F2_paired_forest.png', 'F3_sweeps.png', 'F4_utility_vs_bits.png', 'F5_per_seed_diff.png', 'F6_calibration_diagnostics.png']

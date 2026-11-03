@@ -7,6 +7,7 @@ from tvcsi.metrics import cvar, cvar_min_eta
 from tvcsi.models.dummy import DummyDecoder, DummyEncoder, PersistencePredictor
 from tvcsi.codebook import dft_codebook, beam_gains
 from tvcsi.solvers import brute_force, dp_mckp, greedy_tvcsi, upper_hull
+from tvcsi.quality import LogisticQuality
 from tvcsi.tvcsi import expected_utility, fit_table, tvcsi_scores
 
 COSTS = np.array([0, 32, 64, 128])
@@ -113,10 +114,10 @@ def test_tvcsi_table_and_utility():
     assert tab.r_hat.shape == (4, 10)
     assert np.all(np.diff(tab.r_hat[0]) < 0)          # staler prediction -> more regret
     U = expected_utility(tab, np.array([30.0, 30.0]), np.array([0.05, 0.95]), np.array([1.0, 0.2]),
-                         np.array([10.0, 10.0]), 1.5)
+                         LogisticQuality(np.array([10.0, 10.0]), 1.5))
     assert U.shape == (2, 4) and np.all(U <= np.array([[1.0], [0.2]]) + 1e-12)
     S = tvcsi_scores(U, COSTS, 1e-9)
     assert S[0].max() > S[1].max()                    # important + stale user is worth more bits
     no_conf = expected_utility(tab, np.array([30.0]), np.array([0.05]), np.array([1.0]),
-                               np.array([10.0]), 1.5, use_confidence=False)
+                               LogisticQuality(np.array([10.0]), 1.5), use_confidence=False)
     assert no_conf[0, 0] > U[0, 0]                    # pooled regret hides the staleness

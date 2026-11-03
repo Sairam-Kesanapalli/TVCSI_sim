@@ -37,3 +37,11 @@ def task_quality(gamma_lin: np.ndarray, gamma0_db: np.ndarray, s_db: float) -> n
 def task_utility(v: np.ndarray, Q: np.ndarray) -> np.ndarray:
     """Task utility U_k = v_k * Q_k(gamma_k) (Eq. 21, single semantic representation)."""
     return v * Q
+
+
+def deliverable_bits(gamma_lin: np.ndarray, bandwidth_hz: float, Ts_s: float) -> np.ndarray:
+    """Bits deliverable in one slot, Delta R_k(t) = W Ts log2(1 + gamma_k) (right side of Eq. 39i).
+
+    Shannon capacity of the interference-free link; an upper bound on what any real MCS carries.
+    """
+    return bandwidth_hz * Ts_s * np.log2(1.0 + gamma_lin)

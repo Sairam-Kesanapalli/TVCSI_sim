@@ -1,0 +1,4 @@
+Launch time: 2026-11-03T13:17:48.9266467+05:30
+cwd: C:\Users\JSSR DURGESH\Documents\TVCSI_research\side_track_combined\TVCSI_combined\research\faculty_TaskVoCSI_v2
+PID 30100: C:\Users\JSSR DURGESH\venvs\taskv2\Scripts\python.exe -u run.py --out results\full_surrogate_20261103
+PID 25904: C:\Users\JSSR DURGESH\venvs\taskv2\Scripts\python.exe -u run.py --measured-task --out results\full_digits_20261103
