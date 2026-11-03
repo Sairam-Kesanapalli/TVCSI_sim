@@ -1,0 +1,20 @@
+S4: learned per-mode quality estimator replaces the mean-regret plug-in
+
+- src/tvcsi/estimator.py: gNB-side features, exploration data on train seeds over
+  15 configurations, ExtraTrees forest predicting E[Q] and Pr[Q < Q_min] for every
+  feedback mode, leaf size chosen on validation seeds, deterministic cache.
+- sim.py: estimator and read-only observer arguments, one batched estimator call
+  per slot, outage probability passed to the schemes (p_out, used from S5).
+- schemes.py: Optimised, Proposed, Proposed_no_importance use the learned estimator;
+  the pre-S4 schemes kept bit-identical as *_plugin ablations.
+- Sweeps and sensitivity use one frozen base-config estimator at every point;
+  scripts/fit_estimator.py; run_all.sh step; plot styles; config section.
+- Tests: the strict xfail test_perfect_csi_measured_q_estimator passes (mark
+  removed); S3 golden test maps old names to *_plugin and still matches exactly.
+- ASSUMPTIONS.md 56-63 and P25-P29; research/checkpoints/S4_checkpoint.md;
+  research/logs/S4/ (fit log, test evaluation, pytest log, integrity).
+
+Test seeds 1000-1009, default point: Proposed 2.779 vs periodic 2.726
+(+0.053 +- 0.006, 10/10 seeds), 98 % of the genie; critical violations in feasible
+slots 5.1 % vs 10.8 %. Pre-S4 Proposed: 1.250 (0 bits). Validation gain correlation
+0.29-0.38, test (Proposed trajectory) 0.10-0.23. Suite: 50 passed, 1 skipped.

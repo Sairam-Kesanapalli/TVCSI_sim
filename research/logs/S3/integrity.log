@@ -1,0 +1,25 @@
+files=23 match=0 mismatch=23 missing=0 extra=72
+CHANGED: EXPERIMENT_NOTES.md
+CHANGED: legacy_sources/channel(1).py
+CHANGED: legacy_sources/codebook.py
+CHANGED: legacy_sources/config.py
+CHANGED: legacy_sources/importance.py
+CHANGED: legacy_sources/link.py
+CHANGED: legacy_sources/schemes.py
+CHANGED: legacy_sources/sim.py
+CHANGED: legacy_sources/solvers.py
+CHANGED: legacy_sources/summary.md
+CHANGED: legacy_sources/tvcsi.py
+CHANGED: README.md
+CHANGED: requirements.txt
+CHANGED: resume.py
+CHANGED: run.py
+CHANGED: taskv2/__init__.py
+CHANGED: taskv2/core.py
+CHANGED: taskv2/diagnostics.py
+CHANGED: taskv2/digits_task.py
+CHANGED: taskv2/eval.py
+CHANGED: taskv2/nn.py
+CHANGED: taskv2/policy.py
+CHANGED: tests/test_core.py
+committed blobs: files=23 match=23 mismatch=0 missing=0

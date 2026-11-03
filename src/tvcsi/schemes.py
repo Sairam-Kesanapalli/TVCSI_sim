@@ -1,7 +1,9 @@
 """Feedback-mode scheduling schemes (spec sections 2 and 7).
 
 A scheme sees only DecisionInputs, which hold gNB-side information: estimated utilities, the
-gNB's SINR belief, importance, costs and budget. Only 'Exact' additionally receives the true
+gNB's SINR belief, importance, costs and budget, and (since S3) its predicted beam gains, the
+predictor's confidence, each user's feedback age and last mode, and the message types. None of
+them is derived from the true channel. Only 'Exact' additionally receives the true
 per-mode utilities (its genie role); the simulator passes None to every other scheme.
 """
 from __future__ import annotations
@@ -12,6 +14,7 @@ from typing import Callable
 
 import numpy as np
 
+from .importance import CRITICAL
 from .solvers import dp_mckp, greedy_tvcsi
 
 
@@ -23,13 +26,25 @@ class DecisionInputs:
     v: np.ndarray              # [K] semantic importance
     costs: np.ndarray          # [M_f + 1] bits per mode
     budget: float              # C_FB_max in bits
+    # S3: further gNB-side state. All optional, so existing constructor calls keep working. The
+    # simulator passes copies, so a scheme cannot change the simulator's own state.
+    ghat0: np.ndarray | None = None      # [K, B] float: this scheme's predicted beam gains
+    conf: np.ndarray | None = None       # [K] float in [0, 1]: the predictor's confidence
+    age: np.ndarray | None = None        # [K] float: slots since this scheme last let the user feed
+                                         #   back (mode > 0); 1 = previous slot, inf = never
+    last_mode: np.ndarray | None = None  # [K] int64: mode this scheme chose in the previous slot (0 at t = 0)
+    types: np.ndarray | None = None      # [K] int: message type (importance.CRITICAL, NORMAL, BACKGROUND)
+    # S4: outage probability Pr[Q_k^m < Q_min] per mode from the learned estimator (None otherwise)
+    p_out: np.ndarray | None = None      # [K, M_f + 1] float in [0, 1]
 
 
 @dataclass(frozen=True)
 class Scheme:
     name: str
     decide: Callable[[DecisionInputs, np.ndarray | None], np.ndarray]
-    estimator: str | None = None   # None | "full" | "no_confidence" | "no_importance"
+    # None | "learned" | "learned_no_importance" (S4 learned estimator)
+    #      | "full" | "no_confidence" | "no_importance" (mean-regret plug-in table, the *_plugin ablations)
+    estimator: str | None = None
     uses_truth: bool = False       # receives true utilities (Exact only)
     budget_exempt: bool = False    # may exceed C_FB_max (full_feedback and fitting policies)
 
@@ -62,6 +77,65 @@ def fill_in_order(order: np.ndarray, m: int, costs: np.ndarray, budget: float, K
     return modes
 
 
+def fill_largest(order: np.ndarray, costs: np.ndarray, budget: float, K: int) -> np.ndarray:
+    """S5, faculty baseline rule (TaskVoCSI_v2 policy.baseline_modes): walk the users in `order` and
+    give each the LARGEST mode that still fits the remaining budget; stop at the first user for whom
+    no mode > 0 fits. So the budget is filled instead of leaving bits unused."""
+    modes = np.zeros(K, dtype=np.int64)
+    left = float(budget)
+    for k in order:
+        m = int(np.flatnonzero(costs <= left + 1e-9).max())
+        if m == 0:
+            break
+        modes[k] = m
+        left -= float(costs[m])
+    return modes
+
+
+def belief_margin(ghat0: np.ndarray) -> np.ndarray:
+    """(top1 - top2) / top1 of the predicted beam gains: small = the gNB is unsure which beam is best."""
+    g = np.sort(ghat0, axis=1)
+    return (g[:, -1] - g[:, -2]) / (g[:, -1] + 1e-6)
+
+
+# S5: the five faculty baselines (name -> user order). All use only gNB-side information.
+FILL_ORDERS = {
+    "fill_periodic": lambda inp: np.roll(np.arange(len(inp.v)), -(inp.t % len(inp.v))),   # round robin
+    "fill_age": lambda inp: np.argsort(-inp.age, kind="stable"),              # oldest report first
+    "fill_uncertainty": lambda inp: np.argsort(belief_margin(inp.ghat0), kind="stable"),
+    "fill_importance": lambda inp: np.argsort(-inp.v, kind="stable"),         # most important first
+    "fill_channel": lambda inp: np.argsort(inp.ghat0.max(axis=1), kind="stable"),  # weakest believed link first
+}
+
+
+def risk_scheme(name: str, beta: float, eps: float) -> Scheme:
+    """S5 'Proposed_risk': Proposed plus a virtual queue (Lyapunov drift-plus-penalty) per critical user.
+
+    Z_k(t+1) = max(Z_k(t) + p_k(t) - max(eps, p_k^best(t)), 0), where p_k(t) is the estimated
+    outage probability Pr[Q_k < Q_min] of the mode chosen for critical user k and p_k^best(t) the
+    smallest one over all modes (S4 estimator, gNB-side). Z_k grows only while a critical user's
+    expected violations run above the target eps AND above what any mode could achieve, i.e. only
+    for avoidable violations (cf. the Phase 1 feasibility split). Without the max(eps, p^best) term
+    the queue of a user whom no mode can protect grows forever and takes the whole budget (first
+    calibration, research/logs/S5/01_calibrate_risk_v1.log). Z_k then raises the value of feedback
+    for that user:  value[k][m] = v_k E[Q_k^m] - beta Z_k Pr[Q_k^m < Q_min].
+    beta = 0 gives exactly Proposed. The queue lives in the scheme (one per simulate call)."""
+    state = {"Z": None}
+
+    def decide(inp, _):
+        K = len(inp.v)
+        if state["Z"] is None:
+            state["Z"] = np.zeros(K)
+        Z = state["Z"] * (inp.types == CRITICAL)
+        values = inp.U_hat - beta * Z[:, None] * inp.p_out if beta else inp.U_hat
+        modes = greedy_tvcsi(values, inp.costs, inp.budget)
+        chosen_p = inp.p_out[np.arange(K), modes]
+        target = np.maximum(eps, inp.p_out.min(axis=1))
+        state["Z"] = np.maximum(Z + (inp.types == CRITICAL) * (chosen_p - target), 0.0)
+        return modes
+    return Scheme(name, decide, "learned")
+
+
 def build_scheme(name: str, cfg: dict, rng: np.random.Generator | None = None) -> Scheme:
     """Construct a scheme by name. 'Baseline' resolves to cfg.baseline.kind."""
     m_fixed = cfg["baseline"]["m_fixed"]
@@ -80,14 +154,30 @@ def build_scheme(name: str, cfg: dict, rng: np.random.Generator | None = None) -
         return Scheme(name, base)
     if name == "Exact":
         return Scheme(name, lambda inp, U_true: dp_mckp(U_true, inp.costs, inp.budget), uses_truth=True)
+    dp = lambda inp, _: dp_mckp(inp.U_hat, inp.costs, inp.budget)            # noqa: E731
+    greedy = lambda inp, _: greedy_tvcsi(inp.U_hat, inp.costs, inp.budget)   # noqa: E731
+    # S4: the main schemes use the learned per-mode quality estimator (tvcsi.estimator).
     if name == "Optimised":
-        return Scheme(name, lambda inp, _: dp_mckp(inp.U_hat, inp.costs, inp.budget), "full")
+        return Scheme(name, dp, "learned")
     if name == "Proposed":
-        return Scheme(name, lambda inp, _: greedy_tvcsi(inp.U_hat, inp.costs, inp.budget), "full")
-    if name == "Proposed_no_confidence":
-        return Scheme(name, lambda inp, _: greedy_tvcsi(inp.U_hat, inp.costs, inp.budget), "no_confidence")
+        return Scheme(name, greedy, "learned")
     if name == "Proposed_no_importance":
-        return Scheme(name, lambda inp, _: greedy_tvcsi(inp.U_hat, inp.costs, inp.budget), "no_importance")
+        return Scheme(name, greedy, "learned_no_importance")
+    # Pre-S4 mean-regret plug-in, kept unchanged as ablations (bit-identical to the old
+    # Optimised / Proposed / Proposed_no_confidence / Proposed_no_importance).
+    if name == "Optimised_plugin":
+        return Scheme(name, dp, "full")
+    if name == "Proposed_plugin":
+        return Scheme(name, greedy, "full")
+    if name == "Proposed_plugin_no_confidence":
+        return Scheme(name, greedy, "no_confidence")
+    if name == "Proposed_plugin_no_importance":
+        return Scheme(name, greedy, "no_importance")
+    if name == "Proposed_risk":
+        return risk_scheme(name, float(cfg["risk"]["beta"]), float(cfg["risk"]["eps_target"]))
+    if name in FILL_ORDERS:
+        order = FILL_ORDERS[name]
+        return Scheme(name, lambda inp, _: fill_largest(order(inp), inp.costs, inp.budget, len(inp.v)))
     if name == "periodic":
         return Scheme(name, periodic)
     if name == "snr_threshold":

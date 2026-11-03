@@ -31,9 +31,18 @@ STYLE = {
     "prediction_only":        dict(color="#eda100", marker="v", ls="-."),
     "importance_only":        dict(color="#e87ba4", marker="P", ls="-."),
     "snr_threshold":          dict(color="#008300", marker="X", ls="-."),
-    "Proposed_no_confidence": dict(color="#4a3aa7", marker="<", ls=":"),
+    "Proposed_plugin":        dict(color="#4a3aa7", marker="<", ls=":"),   # S4: pre-S4 mean-regret plug-in
+    "Optimised_plugin":       dict(color=INK_2,     marker="o", ls=":"),
+    "Proposed_plugin_no_confidence": dict(color="#4a3aa7", marker="<", ls=(0, (3, 1, 1, 1))),
     "Proposed_no_importance": dict(color="#e34948", marker=">", ls=":"),
     "full_feedback":          dict(color="#8a8985", marker="*", ls=(0, (1, 1))),
+    # S5 schemes; drawn together only in the base* and fig16 figures (8 hues there)
+    "Proposed_risk":          dict(color="#2a78d6", marker="o", ls="--"),
+    "fill_periodic":          dict(color="#eda100", marker="v", ls="-."),
+    "fill_age":               dict(color="#e87ba4", marker="P", ls="-."),
+    "fill_uncertainty":       dict(color="#008300", marker="X", ls="-."),
+    "fill_importance":        dict(color="#4a3aa7", marker="<", ls="-."),
+    "fill_channel":           dict(color="#e34948", marker=">", ls="-."),
     "BestBeam_oracle":        dict(color="#8a8985", marker="", ls=":"),
 }
 CATEGORICAL = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#4a3aa7", "#e34948"]
@@ -87,7 +96,10 @@ def save(fig, out_dir: Path, name: str, dpi: int) -> None:
 
 MAIN = ["Exact", "Optimised", "Proposed", "Baseline"]
 SUPP_LEFT = MAIN + ["prediction_only", "importance_only", "snr_threshold", "full_feedback"]
-SUPP_RIGHT = ["Proposed", "Proposed_no_confidence", "Proposed_no_importance", "Baseline"]
+SUPP_RIGHT = ["Proposed", "Proposed_no_importance", "Proposed_plugin", "Baseline"]
+# S5: Proposed and Proposed_risk against every simple baseline (spec periodic + the five faculty ones)
+BASE_SET = ["Proposed", "Proposed_risk", "Baseline", "fill_periodic", "fill_age", "fill_uncertainty",
+            "fill_importance", "fill_channel"]
 BUDGET_LABEL = "Feedback budget $C^{FB}_{max}$ [fraction of $K\\,C_3$]"
 SPEED_LABEL = "User speed [km/h]"
 
@@ -193,6 +205,41 @@ def supp_figure(cfg, res_dir, fig_dir, idx, fname, sweep, metric, xlabel, ylabel
     fig.tight_layout()
     stamp_dummy(fig, cfg)
     save(fig, fig_dir, f"supp{idx:02d}_{fname.split('_', 1)[1]}", cfg["plots"]["dpi"])
+
+
+def base_figure(cfg, res_dir, fig_dir, idx, fname, sweep, metric, xlabel, ylabel, title) -> None:
+    """S5/S7: Proposed and Proposed_risk against all simple baselines."""
+    df = load_sweep(res_dir, sweep)
+    if not set(BASE_SET) <= set(df["scheme"]):
+        return
+    fig, ax = plt.subplots()
+    draw_curves(ax, aggregate(df, metric), BASE_SET, cfg)
+    ax.set(xlabel=xlabel, ylabel=ylabel, title=f"{title}: Proposed vs simple baselines")
+    ax.legend(loc="best", fontsize=7)
+    _caption(fig, df["seed"].nunique(), "; fill_* = faculty baselines (largest mode that fits)")
+    stamp_dummy(fig, cfg)
+    save(fig, fig_dir, f"base{idx:02d}_{fname.split('_', 1)[1]}", cfg["plots"]["dpi"])
+
+
+def fig16(cfg, res_dir, fig_dir) -> None:
+    """S5/S7: worst critical user's violation rate in feasible slots (the per-user Eq. 39j check)
+    vs budget and vs speed, with the tolerance eps."""
+    eps = cfg["constraints"]["eps_violation"]
+    schemes = ["Exact", "Proposed", "Proposed_risk", "Baseline", "fill_importance", "fill_age"]
+    fig, axes = plt.subplots(1, 2, figsize=(12.4, 4.6), sharey=True)
+    for ax, (sweep, xlabel) in zip(axes, [("budget", BUDGET_LABEL), ("speed", SPEED_LABEL)]):
+        df = load_sweep(res_dir, sweep)
+        draw_curves(ax, aggregate(df, "crit_worst_violation_feasible"),
+                    [n for n in schemes if n in set(df["scheme"])], cfg, unit_interval=True)
+        ax.axhline(eps, color="#e34948", lw=1.2, ls="--", label=f"tolerance $\\epsilon$ = {eps:g} (Eq. 39j)")
+        ax.set(xlabel=xlabel, ylabel="Worst critical user: violation rate in feasible slots")
+        ax.legend(loc="best", fontsize=7.5)
+        ax.tick_params(labelleft=True)
+    fig.suptitle("Per-user reliability of critical users (Eq. 39j)", fontsize=11)
+    _caption(fig, load_sweep(res_dir, "budget")["seed"].nunique())
+    fig.tight_layout()
+    stamp_dummy(fig, cfg)
+    save(fig, fig_dir, "fig16_worst_critical_violation", cfg["plots"]["dpi"])
 
 
 def fig12(cfg, res_dir, fig_dir) -> None:
@@ -333,6 +380,8 @@ def make_all(cfg: dict) -> None:
     fig14(cfg, res_dir, fig_dir)
     for i, spec in enumerate(SUPP_FIGS, start=1):
         supp_figure(cfg, res_dir, fig_dir, i, *spec)
+        base_figure(cfg, res_dir, fig_dir, i, *spec)
+    fig16(cfg, res_dir, fig_dir)
 
 
 def main() -> None:

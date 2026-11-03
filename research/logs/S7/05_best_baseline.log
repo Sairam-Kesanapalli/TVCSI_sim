@@ -1,0 +1,34 @@
+         sweep     x      ref   best_baseline  ref_util  best_util    diff   ci95  wins  p_holm  rel_pct  all_8_beaten
+        budget  0.05 Proposed fill_importance    2.5503     2.4389  0.1114 0.0148    10  0.0000   4.5674          True
+        budget  0.10 Proposed fill_importance    2.6900     2.6000  0.0900 0.0123    10  0.0000   3.4616          True
+        budget  0.20 Proposed        Baseline    2.7557     2.6850  0.0707 0.0105    10  0.0000   2.6341          True
+        budget  0.30 Proposed        Baseline    2.7735     2.7286  0.0449 0.0068    10  0.0000   1.6456          True
+        budget  0.50 Proposed        Baseline    2.7927     2.7742  0.0185 0.0057    10  0.0001   0.6664          True
+        budget  0.75 Proposed fill_importance    2.7971     2.7917  0.0054 0.0009    10  0.0000   0.1924          True
+        budget  1.00 Proposed   fill_periodic    2.7977     2.7982 -0.0005 0.0011     5  1.0000  -0.0176         False
+         users  2.00 Proposed        Baseline    0.8064     0.8015  0.0049 0.0013    10  0.0001   0.6114          True
+         users  4.00 Proposed        Baseline    1.4774     1.4642  0.0132 0.0040    10  0.0001   0.9027          True
+         users  6.00 Proposed        Baseline    2.2063     2.1733  0.0330 0.0087    10  0.0000   1.5173          True
+         users  8.00 Proposed        Baseline    2.7741     2.7286  0.0455 0.0075    10  0.0000   1.6669          True
+         users 12.00 Proposed        Baseline    3.6353     3.5849  0.0504 0.0034    10  0.0000   1.4068          True
+         users 16.00 Proposed        Baseline    4.0928     4.0449  0.0478 0.0057    10  0.0000   1.1827          True
+         speed  3.00 Proposed        fill_age    2.8306     2.8214  0.0093 0.0060     9  0.0139   0.3287          True
+         speed 10.00 Proposed        fill_age    2.8159     2.7991  0.0168 0.0046    10  0.0000   0.5989          True
+         speed 20.00 Proposed        Baseline    2.7911     2.7562  0.0349 0.0062    10  0.0000   1.2661          True
+         speed 30.00 Proposed        Baseline    2.7741     2.7286  0.0455 0.0075    10  0.0000   1.6669          True
+         speed 40.00 Proposed        Baseline    2.7620     2.6916  0.0704 0.0096    10  0.0000   2.6145          True
+         speed 60.00 Proposed        Baseline    2.7362     2.6289  0.1073 0.0112    10  0.0000   4.0807          True
+critical_share  0.00 Proposed        Baseline    2.7168     2.7001  0.0167 0.0043    10  0.0000   0.6195          True
+critical_share  0.10 Proposed        Baseline    2.7544     2.7218  0.0326 0.0058    10  0.0000   1.1982          True
+critical_share  0.25 Proposed        Baseline    2.7741     2.7286  0.0455 0.0075    10  0.0000   1.6669          True
+critical_share  0.50 Proposed        Baseline    2.8205     2.7591  0.0614 0.0066    10  0.0000   2.2263          True
+critical_share  0.75 Proposed        Baseline    2.8737     2.7953  0.0784 0.0048    10  0.0000   2.8053          True
+           snr  5.00 Proposed        fill_age    1.2280     1.1283  0.0998 0.0564     9  0.0031   8.8413          True
+           snr 10.00 Proposed        Baseline    2.1152     2.0322  0.0830 0.0125    10  0.0000   4.0825          True
+           snr 15.00 Proposed        Baseline    2.7741     2.7286  0.0455 0.0075    10  0.0000   1.6669          True
+           snr 20.00 Proposed        Baseline    2.9612     2.9379  0.0233 0.0043    10  0.0000   0.7946          True
+           snr 25.00 Proposed        Baseline    2.9838     2.9769  0.0069 0.0018    10  0.0000   0.2322          True
+
+Proposed: beats the best baseline significantly (Holm) at 28/29 points; all 8 baselines beaten significantly at 28/29; relative gain over best baseline -0.02% .. 8.8% (median 1.52%)
+
+Proposed_risk: beats the best baseline significantly (Holm) at 28/29 points; all 8 baselines beaten significantly at 28/29; relative gain over best baseline -0.02% .. 8.2% (median 1.22%)

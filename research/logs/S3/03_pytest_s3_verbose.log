@@ -1,0 +1,20 @@
+============================= test session starts =============================
+platform win32 -- Python 3.11.9, pytest-9.2.0, pluggy-1.7.0 -- C:\Users\palya\.venvs\tvcsi_combined\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\palya\OneDrive\Desktop\TVCSI_sim
+configfile: pyproject.toml
+collecting ... collected 11 items
+
+tests/test_s3_plumbing.py::test_golden_regression_bit_identical[1000-default] PASSED [  9%]
+tests/test_s3_plumbing.py::test_golden_regression_bit_identical[1000-K6_speed60_crit05] PASSED [ 18%]
+tests/test_s3_plumbing.py::test_golden_regression_bit_identical[1001-default] PASSED [ 27%]
+tests/test_s3_plumbing.py::test_golden_regression_bit_identical[1001-K6_speed60_crit05] PASSED [ 36%]
+tests/test_s3_plumbing.py::test_golden_regression_bit_identical[1002-default] PASSED [ 45%]
+tests/test_s3_plumbing.py::test_golden_regression_bit_identical[1002-K6_speed60_crit05] PASSED [ 54%]
+tests/test_s3_plumbing.py::test_age_and_last_mode_consistent PASSED      [ 63%]
+tests/test_s3_plumbing.py::test_field_shapes_and_dtypes PASSED           [ 72%]
+tests/test_s3_plumbing.py::test_inputs_are_copies PASSED                 [ 81%]
+tests/test_s3_plumbing.py::test_existing_scheme_unaffected_by_mutating_neighbour PASSED [ 90%]
+tests/test_s3_plumbing.py::test_new_fields_carry_no_true_channel PASSED  [100%]
+
+============================= 11 passed in 34.72s =============================

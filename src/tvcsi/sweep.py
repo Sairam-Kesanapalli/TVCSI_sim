@@ -25,6 +25,7 @@ from .config import apply_overrides, feedback_budget, feedback_costs, load_confi
 from .schemes import periodic_modes  # noqa: E402
 from .sim import ORACLE, fit_tvcsi_table, metrics_rows, simulate  # noqa: E402
 from .solvers import brute_force, dp_mckp, greedy_tvcsi  # noqa: E402
+from .estimator import estimator_path, get_estimator, load_estimator  # noqa: E402
 from .tvcsi import TVCSITable  # noqa: E402
 
 ONE_D_SWEEPS = ("budget", "users", "speed", "critical_share", "snr")
@@ -59,11 +60,12 @@ def _table_cfg(cfg: dict) -> dict:
     Excluded: schemes/sweeps/paths/plots/runtime (bookkeeping); the evaluation-only constraints (no
     decision reads them); and quality/radio/link_level, because the table holds beam REGRET only and
     the fitting policies (prediction_only, random modes) never look at Q, so no fitted number depends
-    on the quality model (tests/test_phase2_quality.py checks this).
+    on the quality model (tests/test_phase2_quality.py checks this). The S4 `estimator`
+    and S5 `risk` sections are excluded too: the plug-in table does not use them.
     """
     return {k: v for k, v in cfg.items()
             if k not in ("sweeps", "schemes", "paths", "plots", "runtime", "constraints",
-                         "quality", "radio", "link_level")}
+                         "quality", "radio", "link_level", "estimator", "risk")}
 
 
 def get_table(cfg: dict) -> TVCSITable:
@@ -82,8 +84,9 @@ def _fit_job(cfg: dict) -> None:
 
 
 def _sim_job(args) -> tuple[str, int, list[dict], dict | None]:
-    cfg, key, seed, schemes, keep, table = args
-    res = simulate(cfg, seed, schemes, table=table or get_table(cfg), keep_traces=keep)
+    cfg, key, seed, schemes, keep, table, est_path = args
+    res = simulate(cfg, seed, schemes, table=table or get_table(cfg), keep_traces=keep,
+                   estimator=load_estimator(est_path))
     traces = {n: tr["loss"] for n, tr in res.traces.items()} if keep else None
     return key, seed, metrics_rows(res), traces
 
@@ -103,6 +106,8 @@ def run_sweeps(cfg: dict, n_jobs: int) -> None:
         unique[p["key"]] = (pcfg, sorted(set(prev) | set(p["schemes"]), key=_scheme_order(cfg)))
 
     t0 = time.time()
+    get_estimator(cfg)                     # S4: ONE frozen estimator (base config) for every point
+    est_path = str(estimator_path(cfg))
     with ProcessPoolExecutor(n_jobs) as pool:
         if cfg["tvcsi"]["refit_per_point"]:
             fixed_table = None   # each worker loads its point's table from the cache
@@ -113,7 +118,7 @@ def run_sweeps(cfg: dict, n_jobs: int) -> None:
         print(f"tables ready for {len(unique)} configurations ({time.time() - t0:.0f}s)", flush=True)
 
         default_key = next(p["key"] for p in points if p["sweep"] == "default")
-        jobs = [(c, k, seed, schemes, k == default_key, fixed_table)
+        jobs = [(c, k, seed, schemes, k == default_key, fixed_table, est_path)
                 for k, (c, schemes) in unique.items() for seed in cfg["seeds"]["test"]]
         results = list(pool.map(_sim_job, jobs, chunksize=1))
     print(f"{len(jobs)} simulations done ({time.time() - t0:.0f}s)", flush=True)

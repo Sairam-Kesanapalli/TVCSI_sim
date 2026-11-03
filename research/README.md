@@ -28,11 +28,11 @@ The Phase 1 + Phase 2 baseline of the side track is commit `d639eff`. The facult
 | S0 | backups, directory set-up, environments, verification | **done** (`checkpoints/S0_checkpoint.md`) |
 | S1 | run the faculty implementation completely (both configurations: sigmoid surrogate and measured digits task), unmodified | **done** (`checkpoints/S1_checkpoint.md`; results in `faculty_TaskVoCSI_v2/results/`) |
 | S2 | analyse and document the faculty results | **done** (`S2_faculty_results.md`, `S2_analysis/`, `checkpoints/S2_checkpoint.md`) |
-| S3 | side track: plumbing 3A (expose gNB-side state to schemes; decisions bit-identical) | next |
-| S4 | side track: learned per-mode quality estimator (frozen approach), validated | — |
-| S5 | side track: risk (outage) prediction + five baselines (periodic, age, uncertainty, importance, channel) | — |
-| S6 | side track: ProgressiveCodec + BeamGRU adapted (4-bit codec, confidence) and trained | — |
-| S7 | final experiments, comparison of both tracks, research report | — |
+| S3 | side track: plumbing 3A (expose gNB-side state to schemes; decisions bit-identical) | **done** (`checkpoints/S3_checkpoint.md`; gate: golden regression bit-identical, 49 passed) |
+| S4 | side track: learned per-mode quality estimator (frozen approach), validated | **done** (`checkpoints/S4_checkpoint.md`; Proposed 2.779 vs periodic 2.726, 10/10 test seeds; gate test passes, 50 passed) |
+| S5 | side track: risk (outage) prediction + five baselines (periodic, age, uncertainty, importance, channel) | **done** (`checkpoints/S5_checkpoint.md`; Proposed beats all 8 baselines at 4 points, 10/10 seeds, Holm p <= 1.2e-5) |
+| S6 | side track: ProgressiveCodec + BeamGRU adapted (4-bit codec, confidence) and trained | **done** (`checkpoints/S6_checkpoint.md`; codec adopted, GRU ties persistence at default → persistence kept) |
+| S7 | final experiments, comparison of both tracks, research report | **done** (`S7_final_report.md`, `checkpoints/S7_checkpoint.md`; Proposed beats the best of 8 baselines at 28/29 points) |
 
 Working rules: one stage per session; every stage ends with tests, saved logs/configs, a checkpoint
 document, and a stop for approval. The integration analysis behind S3–S6 (component map,

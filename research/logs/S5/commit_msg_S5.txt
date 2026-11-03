@@ -1,0 +1,16 @@
+S5: five faculty baselines, virtual-queue risk handling, paired Holm statistics
+
+- schemes.py: fill_largest (faculty baseline rule) and the five fill_* baselines
+  (periodic, age, uncertainty, importance, channel); Proposed_risk, a per-critical-
+  user virtual queue on the S4 outage estimate that counts only avoidable violations.
+- stats.py: seed-paired differences with Holm correction.
+- config: risk section (eps_target 0.10, beta 0.2 chosen on validation seeds), new
+  schemes in schemes.supplementary; table cache key ignores the risk section.
+- tests/test_s5_baselines_risk.py (15 tests).
+- research/logs/S5/: beta calibration v1 (queue flaw) and v2, test evaluation at
+  four points, pytest log, integrity; ASSUMPTIONS.md 64-67, P30-P32; checkpoint.
+
+Test seeds, four points (default, budget 0.1, 60 km/h, 50 % critical): Proposed
+beats all 8 simple baselines, 10/10 seeds in all 32 comparisons, Holm p <= 1.2e-5.
+Proposed_risk lowers the worst critical user's violations by 23-48 % for 0.3-3.3 %
+utility. Suite: 65 passed, 1 skipped.

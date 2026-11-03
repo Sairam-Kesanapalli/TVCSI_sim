@@ -1,0 +1,5 @@
+................s..............................x...                      [100%]
+=========================== short test summary info ===========================
+SKIPPED [1] tests\test_phase2_quality.py:118: could not import 'sionna': No module named 'sionna'
+XFAIL tests/test_stage3_sim.py::test_perfect_csi_measured_q_estimator - Known flaw, fixed in Phase 3: the mean-regret plug-in Uhat = v Q(gamma_ref (1 - mean regret)) sits on the saturated top of the measured Q, so the estimator sees no value in feedback and Optimised never requests it (measured: utility 0.98 vs 2.73 for full feedback). strict=True: remove this mark once it passes.
+49 passed, 1 skipped, 1 xfailed in 61.13s (0:01:01)

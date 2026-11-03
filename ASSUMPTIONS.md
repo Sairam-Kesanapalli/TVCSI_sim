@@ -249,6 +249,134 @@ differ, the prompt was followed.
 52. **The link-level tools are optional.** The simulator reads the committed `data/q_curves.csv`;
     only re-measuring needs PyTorch and Sionna (`pip install -e .[linklevel]`).
 
+## Stage S3: gNB-side state for the schemes (plumbing, no behaviour change)
+
+53. **What a scheme may see** (`DecisionInputs` in `src/tvcsi/schemes.py`). Besides t, U_hat,
+    gamma_ref, v, costs and budget, a scheme now receives `ghat0` [K, B] (its own predicted beam
+    gains), `conf` [K] (the predictor's confidence), `age` [K], `last_mode` [K] (int64) and `types`
+    [K] (message types). All five default to None, so older constructor calls still work, and the
+    simulator passes copies, so a scheme cannot alter the simulator state. None of them is derived
+    from the true channel (tested with the tamper test in `tests/test_s3_plumbing.py`). No existing
+    scheme reads them yet; S4/S5 will.
+54. **Age convention.** `age` = slots since this scheme last let the user feed back (mode > 0):
+    1 right after feedback in the previous slot, +1 per slot without feedback, `inf` before the
+    first feedback. `last_mode` = the mode chosen in the previous slot, 0 at t = 0. Both are kept
+    per scheme in `sim.py`, not in the predictor, so they mean the same for any predictor (the S6
+    GRU included). This is exactly `PersistencePredictor.age`, so with dummy models
+    conf = exp(-age / tau) holds exactly. The faculty `History` differs (age 25 at start, 0 right
+    after feedback, capped at 100 in its features): when S4 ports its features, use
+    faculty_age = our_age - 1 with inf -> 25, and document it there.
+55. **No new parameter values in S3.** No config default, scheme, estimator, solver or metric was
+    changed; every decision and metric is bit-identical to the pre-S3 code (golden regression,
+    `research/logs/S3/golden_pre_S3.npz`).
+
+## Stage S4: learned per-mode quality estimator (replaces the mean-regret plug-in)
+
+56. **What is estimated.** For every user k and mode m: E[Q_k^m | gNB-side features] and
+    Pr[Q_k^m < Q_min] (`src/tvcsi/estimator.py`). Uhat[k][m] = v_k E[Q_k^m]; TVCSI (Eq. 32) and the
+    solvers are unchanged. The plug-in Uhat = v Q(gamma_ref (1 - mean regret)) sat on the flat top of
+    the measured Q, so it saw no value in feedback (Proposed and Optimised sent 0 bits).
+57. **Features** (gNB-side only, from `DecisionInputs`, S3): believed SINR of the predicted beam
+    [dB], margin (top1 - top2) / top1, peak share top1 / sum, SINR of the second beam [dB], age
+    (capped, P26) and log(1 + age), a never-fed-back flag, predictor confidence, last mode, message
+    type, and the configuration values SNR [dB], speed [km/h] and PRBs per user. Labels: the
+    counterfactual per-mode Q of the slot that the simulator computes for evaluation. The tamper
+    test (`tests/test_stage3_sim.py::test_no_true_channel_leak`, now with the learned schemes) checks
+    that no true-channel quantity reaches the decisions.
+58. **Frozen, one model for all sweep points.** It is fitted once, at the default configuration plus
+    the one-at-a-time variations of P27, and reused unchanged at every sweep point (no refit per
+    point, unlike the plug-in table, item 21). Configuration values are features, so the model
+    knows which point it is at.
+59. **Data split.** Training data from the TRAIN seeds 3000-3019, the leaf size chosen on the
+    VALIDATION seeds 2000-2004, results reported once on the TEST seeds 1000-1009.
+    `seeds_per_config` seeds per configuration, cycled through each list.
+60. **Exploration policies** (`estimator.fit_p0`): each user independently gets mode 0 with
+    probability p0 in {0.5, 0.75, 0.9, 0.98}, otherwise a uniform mode 1..3 (budget-exempt, data
+    only). They spread the feedback age over short and long gaps. Known limitation: the trajectory of
+    the real Proposed scheme differs from these policies, so the test gain correlation measured along
+    the Proposed trajectory (0.10-0.23) is lower than on validation data (0.29-0.38).
+61. **Names.** `Optimised`, `Proposed`, `Proposed_no_importance` use the learned estimator.
+    The pre-S4 schemes are kept, bit-identical, as `Optimised_plugin`, `Proposed_plugin`,
+    `Proposed_plugin_no_confidence`, `Proposed_plugin_no_importance`. A learned "no confidence"
+    ablation was not added (it would need a second model without the age / confidence features).
+62. **The outage probability is estimated but not used by any decision in S4.** It is passed to the
+    schemes as `DecisionInputs.p_out` for S5 (risk handling).
+63. **Caching.** The fitted model is stored as `results/estimators/estimator_<hash>.joblib` (not in
+    git, ~7 MB) plus a `.json` report (in git). The hash covers every config value it depends on;
+    fitting is deterministic (fixed seeds and `random_state`), so a missing file is rebuilt
+    identically by `python scripts/fit_estimator.py` (~1.5 min on 8 cores). Prediction runs
+    single-threaded (`n_jobs = 1`); a thread pool per call was 4x slower.
+
+## Stage S5: five faculty baselines and risk handling for critical users
+
+64. **Five faculty baselines** (`schemes.FILL_ORDERS`, names `fill_*`): users are visited in a fixed
+    order and each gets the LARGEST mode that still fits the remaining budget (faculty
+    `taskv2/policy.py::baseline_modes`, re-stated and tested literally in
+    `tests/test_s5_baselines_risk.py`). Orders: `fill_periodic` round robin (roll by t mod K),
+    `fill_age` oldest report first (never fed back first), `fill_uncertainty` smallest belief margin
+    (top1 - top2) / top1 first, `fill_importance` largest v first, `fill_channel` weakest believed link
+    (max ghat0) first. The prefix keeps them apart from the spec baselines `periodic` (Baseline,
+    fixed mode 2), `importance_only` and `snr_threshold`. Our side track serves every user, so the
+    faculty's separate service selection for baselines does not apply.
+65. **Risk handling = virtual queue** (`Proposed_risk`, `schemes.risk_scheme`), not the faculty
+    soft penalty (shown inert in S2). Per critical user
+    Z_k(t+1) = max(Z_k(t) + p_k(t) - max(eps_target, p_k^best(t)), 0) with p the S4 outage
+    estimate of the chosen mode and p^best the smallest over the modes; values
+    v_k E[Q_k^m] - beta Z_k Pr[Q_k^m < Q_min] go to the same greedy solver as Proposed. Only gNB-side
+    quantities enter (tamper-tested); beta = 0 is exactly Proposed (tested).
+66. **Why max(eps, p^best).** The first version used Z + p - eps. For a critical user whom no
+    mode can bring under eps the queue then grew forever and took the whole budget; every beta > 0
+    cost 0.5-0.6 utility while hardly lowering the worst violation (validation,
+    `research/logs/S5/01_calibrate_risk_v1.log`). Counting only avoidable expected violations
+    mirrors the Phase 1 feasibility split.
+67. **Statistics** (`src/tvcsi/stats.py::paired_holm`): seed-paired differences, two-sided one-sample
+    t-test, Holm correction over the compared baselines (as faculty `taskv2/eval.py`); one test seed =
+    one replicate.
+
+## Stage S6: trained codec and GRU beam predictor (replace the placeholders)
+
+68. **Codec** (`tvcsi.models.trained.TrainedEncoder/TrainedDecoder`, faculty ProgressiveCodec
+    adapted): input = Re and Im of the user's latest pilot estimate plus its pilot SNR / 30;
+    encoder 2M+1 -> 128 -> 32 values in [-1, 1], each quantised to 4 bits (16 levels, straight-
+    through estimator in training). Mode m sends the first d_m = 8 / 16 / 32 values, so the report
+    is exactly C_m = 32 / 64 / 128 bits and higher modes refine lower ones (Eq. 10). The decoder
+    zero-fills the values not sent and outputs log(1 + g) for all B beams. Uplink errors, headers
+    and delay of the report are not modelled (as before).
+69. **GRU predictor** (`GRUPredictor`, faculty BeamGRU adapted): per slot input = log(1 + last
+    DECODED gains), age (capped at 100, scaled by 25), fresh flag, speed / 60, SNR / 30; a GRU over
+    the last 8 slots and a head that outputs log(1 + g) and a confidence logit. The confidence is
+    learned: Pr[the predicted beam has >= 90 % of the best beam's gain] (the faculty GRU had none).
+    The gNB's own predictions are not fed back into the history (as faculty `History`).
+70. **Training**: train seeds 3000-3019 cycled over the default point and 9 speed / SNR variations
+    (`models_train.grid`), the simulator's own realisations; epochs chosen on validation seeds
+    2000-2004 (lowest mean regret); GRU histories from random-feedback policies (P(mode 0) in
+    `estimator.fit_p0`) using the trained codec's decoded gains. Diagnostics on test seeds.
+71. **S6 gate: the GRU does not beat persistence at the default point** (test regret 0.2922 vs
+    0.2921, better on 5/10 seeds). It does at 3 km/h (8/10), 60 km/h (9/10) and SNR 5 dB (10/10).
+    The synthetic channel (AR(1) Jakes path gains, random-walk angles) is close to memoryless given
+    the last report, so history adds little; at low SNR the GRU gains by denoising. As agreed in
+    HANDOFF §6, the predictor stays **persistence**; the final configuration is the trained codec
+    with persistence (`trained.predictor: tvcsi.models.trained:Persistence`, same rule as the dummy
+    PersistencePredictor). With the GRU the system scores slightly lower (Proposed 2.769 vs 2.774).
+72. **Inference in numpy.** Torch is needed only to train (`scripts/train_models.py`); the weights
+    are stored as plain arrays in `data/models/s6_models.npz` (190 kB, committed) and run with numpy,
+    checked against torch to 1e-9 (`tests/test_s6_models.py`).
+73. **One estimator per model setup.** The S4 estimator learns from what the predictor and codec
+    produce, so each model setup gets its own (the cache hash covers `models` and, when
+    `models: trained`, the `trained` section; with dummy models that section is ignored).
+    Validation gain correlation: dummy 0.29 / 0.35 / 0.38; trained codec + persistence
+    0.30 / 0.37 / 0.39; trained codec + GRU 0.30 / 0.37 / 0.38.
+
+## Stage S7: final experiments
+
+74. **Final configuration** = `configs/default.yaml` + `models: trained` (trained codec + persistence,
+    S6 gate) + dated output folders, generated by `research/logs/S7/make_final_config.py` into
+    `configs/final.yaml` (do not edit by hand). The default config stays `models: dummy`, so the
+    earlier tests and the S3 golden regression keep their meaning. Results:
+    `results/final_20261103/`, `figures/final_20261103/`; the Phase 2 results in `results/` and
+    `figures/` are untouched. One frozen estimator (the trained-models one, fitted at the default
+    point) serves every sweep point (item 58). The final report is `research/S7_final_report.md`.
+
 ## Parameter values: what, why, how, where
 
 Every number added in Phase 1, in the same format. "Source" is the document the value comes from;
@@ -508,4 +636,63 @@ standard value exists, this is said explicitly and the value is stress-tested in
 **P23. Q_min (`quality.q_min`), unchanged**
 * Value: **0.8**, from the original task spec (Eq. 34). With measured Q it means **BLER <= 0.2**:
   a critical message must get through at least 4 times out of 5 in a slot to count as served.
+
+**P25. Estimator model (`estimator.n_estimators`, `max_features`, `random_state`)**
+* What: an ExtraTrees forest (scikit-learn) with 2 (M_f + 1) = 8 outputs.
+* Value: **40 trees, max_features 0.8, random_state 17**.
+* Why: the faculty calibrator (TaskVoCSI_v2 `policy.py`) uses ExtraTrees with 32-48 trees and
+  max_features 0.8; 40 lies in that range. Not tuned further.
+* Where: `src/tvcsi/estimator.py::_forest`.
+
+**P26. Age cap (`estimator.age_cap`)**
+* Value: **200 slots**; "never fed back" also maps to 200 (plus the never-fed flag).
+* Why: at the slowest sweep speed (3 km/h) the confidence time constant is ~1075 slots, but beyond
+  ~200 slots the predicted beam is stale at every speed of the grid; a cap keeps the feature finite.
+
+**P27. Training grid (`estimator.train_grid`, `seeds_per_config`, `slot_stride`)**
+* Value: default point + speed {3, 10, 20, 40, 60} km/h, SNR {5, 10, 20, 25} dB, K {2, 4, 6, 12, 16}
+  (the sweep values) = 15 configurations; 4 seeds each; every 16th slot kept.
+* Why: one frozen model must serve every sweep point; these are the points it is used at. Budget
+  and critical share need no grid: the exploration policies ignore the budget, and the message type
+  is a feature. Every 16th slot: consecutive slots are strongly correlated; 240 000 samples per split.
+* How: `scripts/fit_estimator.py` -> results/estimators/estimator_<hash>.json.
+
+**P28. Leaf size (`estimator.min_samples_leaf`)**
+* Value: candidates **{25, 50, 100}**, chosen on validation by mean gain correlation (MAE breaks
+  ties) -> **100** (validation gain correlation 0.288 / 0.347 / 0.376 for modes 1-3, MAE 0.132).
+  All three candidates were within 0.01 of each other.
+
+**P29. Exploration policies (`estimator.fit_p0`)**
+* Value: **{0.5, 0.75, 0.9, 0.98}** = probability of mode 0 per user and slot.
+* Why: the plug-in table used {0.5, 0.9, 0.98} (item 19); 0.75 was added to cover medium ages.
+
+**P30. Risk target (`risk.eps_target`)**
+* Value: **0.10** = `constraints.eps_violation` (the evaluation target of Eqs. 34 / 39j, from
+  TS 38.214 5.2.2.1, see P1). Kept as a separate key because schemes never read `constraints`.
+
+**P31. Queue weight (`risk.beta`)**
+* Value: **0.2**, chosen on the VALIDATION seeds by the rule in `research/logs/S5/calibrate_risk.py`
+  (admissible if the worst critical user's feasible-slot violation, averaged over the validation
+  seeds, is <= eps_target at every calibration point; then highest mean utility).
+* Grid {0, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1}. Only 0.2 was admissible, and only just (worst
+  point 0.0997 at budget 0.1; 0.5 and 1.0 gave 0.1006 / 0.1011), so the choice is fragile: the
+  budget-0.1 point is close to the limit of what any weight achieves.
+* Where: `research/logs/S5/calib_v2_20261103/choice.json`, `01_calibrate_risk_v2.log`.
+
+**P32. Calibration points (`risk.calib_points`)**
+* Value: default; budget_frac 0.1; speed 60 km/h; crit_share 0.5: the points where critical users
+  are hardest to protect (small budget, stale predictions, many critical users competing).
+
+**P33. Codec size (`scripts/train_models.py::Codec`)**
+* Value: hidden 128 (faculty 96), 32 latent values, 4 bits each (our C_m; faculty 6 bits).
+* Why: 32 latent values x 4 bits = 128 bits = C_3 of the spec; the hidden layer is larger than the
+  faculty's because M = B = 32 here (faculty 16).
+
+**P34. GRU size and window (`models_train.gru_hidden`, `window`)**
+* Value: hidden 64 (faculty 48), window 8 slots (faculty 5; = `feedback.history_len`).
+
+**P35. Training settings (`models_train`, `scripts/train_models.py`)**
+* Value: Adam, lr 2e-3, batch 512, gradient clip 2.0 (faculty values); codec 15 epochs, GRU 12,
+  best validation epoch kept (chosen: 15 and 11); codec loss MSE + 0.08 x CE (faculty), GRU loss
+  MSE + 0.1 x BCE(confidence); one window every 8 slots; seed 7; CPU, torch 2.15.
 

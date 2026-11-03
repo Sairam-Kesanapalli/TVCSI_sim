@@ -10,7 +10,8 @@ from tvcsi.sim import fit_tvcsi_table, metrics_rows, simulate
 from tvcsi.tvcsi import TVCSITable
 
 ALL = ["Exact", "Optimised", "Proposed", "Baseline", "prediction_only", "importance_only",
-       "snr_threshold", "full_feedback", "Proposed_no_confidence", "Proposed_no_importance"]
+       "snr_threshold", "full_feedback", "Proposed_no_importance", "Optimised_plugin", "Proposed_plugin",
+       "Proposed_plugin_no_confidence", "Proposed_plugin_no_importance"]
 
 
 @pytest.fixture(scope="module")
@@ -37,12 +38,12 @@ PERFECT_TABLE = TVCSITable(edges=np.array([0.5]), r_hat=np.array([[0.6, 0.3], [0
 def test_perfect_csi():
     cfg = load_config(overrides={**PERFECT_CSI, "quality.model": "logistic"})
     tab = PERFECT_TABLE
-    m = simulate(cfg, 11, ["Exact", "Optimised", "full_feedback"], table=tab).metrics
+    m = simulate(cfg, 11, ["Exact", "Optimised_plugin", "full_feedback"], table=tab).metrics
     assert m["full_feedback"]["regret"] < 1e-6
-    assert m["Optimised"]["regret"] < 1e-6
+    assert m["Optimised_plugin"]["regret"] < 1e-6
     assert m["Exact"]["regret"] < 1e-6
     assert m["Exact"]["utility"] == pytest.approx(m["full_feedback"]["utility"], abs=1e-9)
-    assert m["Optimised"]["utility"] == pytest.approx(m["full_feedback"]["utility"], abs=1e-9)
+    assert m["Optimised_plugin"]["utility"] == pytest.approx(m["full_feedback"]["utility"], abs=1e-9)
 
 
 def test_perfect_csi_measured_q_genie():
@@ -53,19 +54,19 @@ def test_perfect_csi_measured_q_genie():
     assert m["Exact"]["utility"] == pytest.approx(m["full_feedback"]["utility"], abs=1e-9)
 
 
-@pytest.mark.xfail(strict=True, reason="Known flaw, fixed in Phase 3: the mean-regret plug-in "
-                   "Uhat = v Q(gamma_ref (1 - mean regret)) sits on the saturated top of the measured Q, so "
-                   "the estimator sees no value in feedback and Optimised never requests it (measured: "
-                   "utility 0.98 vs 2.73 for full feedback). strict=True: remove this mark once it passes.")
-def test_perfect_csi_measured_q_estimator():
-    m = simulate(load_config(overrides=PERFECT_CSI), 11, ["Optimised", "full_feedback"], table=PERFECT_TABLE).metrics
+# S4 gate (was a strict xfail until S4): the mean-regret plug-in sat on the saturated top of the
+# measured Q, so it saw no value in feedback and Optimised never requested it (utility 0.98 vs 2.73).
+# Optimised now uses the frozen learned estimator (fitted at the default configuration, not here).
+def test_perfect_csi_measured_q_estimator(estimator):
+    m = simulate(load_config(overrides=PERFECT_CSI), 11, ["Optimised", "full_feedback"], table=PERFECT_TABLE,
+                 estimator=estimator).metrics
     assert m["Optimised"]["utility"] == pytest.approx(m["full_feedback"]["utility"], rel=0.02)
 
 
 # Test 8: over a full default run no scheme except full_feedback exceeds C_FB_max
 # (simulate() hard-asserts the budget every slot for non-exempt schemes).
-def test_budget_never_exceeded(default_cfg, table):
-    res = simulate(default_cfg, default_cfg["seeds"]["test"][0], ALL, table=table)
+def test_budget_never_exceeded(default_cfg, table, estimator):
+    res = simulate(default_cfg, default_cfg["seeds"]["test"][0], ALL, table=table, estimator=estimator)
     budget = 0.25 * 8 * 128
     for name in ALL:
         if name != "full_feedback":
@@ -74,11 +75,11 @@ def test_budget_never_exceeded(default_cfg, table):
 
 
 # Test 9: identical seeds give byte-identical CSVs; different seeds give different numbers.
-def test_reproducibility(table):
+def test_reproducibility(table, estimator):
     cfg = load_config(overrides={"sim.T": 300, "sim.warmup": 20})
 
     def csv(seed):
-        rows = metrics_rows(simulate(cfg, seed, ALL, table=table), seed=seed)
+        rows = metrics_rows(simulate(cfg, seed, ALL, table=table, estimator=estimator), seed=seed)
         buf = io.StringIO()
         pd.DataFrame(rows).drop(columns="seed").to_csv(buf, index=False)
         return buf.getvalue()
@@ -90,15 +91,15 @@ def test_reproducibility(table):
 
 # Test 10: replacing the true channel with garbage after the shared outcome tables are built
 # changes nothing in the decisions of non-genie schemes (only Exact may react).
-def test_no_true_channel_leak(table):
+def test_no_true_channel_leak(table, estimator):
     cfg = load_config(overrides={"sim.T": 400})
     garbage_rng = np.random.default_rng(123)
 
     def tamper(shared):
         shared.g_true = garbage_rng.exponential(50.0, shared.g_true.shape)
 
-    clean = simulate(cfg, 7, ALL, table=table, record_decisions=True)
-    dirty = simulate(cfg, 7, ALL, table=table, record_decisions=True, tamper=tamper)
+    clean = simulate(cfg, 7, ALL, table=table, estimator=estimator, record_decisions=True)
+    dirty = simulate(cfg, 7, ALL, table=table, estimator=estimator, record_decisions=True, tamper=tamper)
     for name in ALL:
         if name != "Exact":
             np.testing.assert_array_equal(clean.decisions[name], dirty.decisions[name], err_msg=name)

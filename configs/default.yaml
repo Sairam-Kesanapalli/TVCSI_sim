@@ -3,10 +3,23 @@
 
 models: dummy              # dummy | trained
 trained:                   # used only when models == trained; dotted paths "package.module:ClassName"
-  encoder: null
-  decoder: null
-  predictor: null
-  kwargs: {}               # passed to every trained-model constructor
+  encoder: tvcsi.models.trained:TrainedEncoder     # S6: 4-bit progressive codec (numpy inference)
+  decoder: tvcsi.models.trained:TrainedDecoder
+  predictor: tvcsi.models.trained:Persistence      # S6 gate: the GRU (tvcsi.models.trained:GRUPredictor) does not
+                                                   #   beat persistence at the default point, so persistence is kept
+  kwargs: {weights: data/models/s6_models.npz}     # passed to every trained-model constructor
+
+models_train:              # S6: scripts/train_models.py (torch, CPU); writes `out`.npz / .json
+  out: data/models/s6_models
+  grid:                    # default point + one-at-a-time variations; train seeds cycled over them
+    channel.speed_kmh: [3, 10, 20, 40, 60]
+    link.snr_db: [5, 10, 20, 25]
+  epochs_codec: 15         # the epoch with the lowest validation regret is kept
+  epochs_gru: 12
+  window: 8                # slots of history the GRU sees (faculty: 5)
+  slot_stride: 8           # keep one training window every 8 slots
+  gru_hidden: 64           # faculty: 48
+  seed: 7
 
 system:
   K: 8                     # users
@@ -108,6 +121,31 @@ tvcsi:
   refit_per_point: true    # fit a table on validation seeds at every sweep point (see ASSUMPTIONS.md)
   fit_p0: [0.5, 0.9, 0.98] # random-mode policies used for fitting: P(mode 0); others uniform over 1..3
 
+estimator:                 # S4: learned per-mode quality estimator used by Optimised / Proposed (src/tvcsi/estimator.py)
+  cache_dir: results/estimators  # frozen model cached as estimator_<hash>.joblib (+ .json report); rebuilt if missing
+  fit_p0: [0.5, 0.75, 0.9, 0.98] # exploration policies: P(mode 0), otherwise a uniform mode in 1..M_f (spreads the age)
+  slot_stride: 16          # keep every 16th slot of each run (consecutive slots are strongly correlated)
+  seeds_per_config: 4      # seeds per training configuration, cycled through seeds.train / seeds.val
+  train_grid:              # default point + one-at-a-time variations (the sweep values), all on TRAIN seeds
+    channel.speed_kmh: [3, 10, 20, 40, 60]
+    link.snr_db: [5, 10, 20, 25]
+    system.K: [2, 4, 6, 12, 16]
+  age_cap: 200             # feedback age in the features is capped here (never fed back -> age_cap)
+  n_estimators: 40         # ExtraTrees forest size
+  min_samples_leaf: [25, 50, 100]  # candidates, chosen on the VALIDATION seeds
+  max_features: 0.8
+  random_state: 17
+
+risk:                      # S5: virtual queue for critical users, scheme Proposed_risk (schemes.risk_scheme)
+  eps_target: 0.10         # target outage share per critical user (= constraints.eps_violation, which schemes never read)
+  beta: 0.2                # queue weight; set by research/logs/S5/calibrate_risk.py on VALIDATION seeds (ASSUMPTIONS P31)
+  beta_grid: [0.0, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1.0]
+  calib_points:            # configurations the weight is chosen on: default + hard points for critical users
+    - {}
+    - {feedback.budget_frac: 0.1}
+    - {channel.speed_kmh: 60.0}
+    - {importance.crit_share: 0.5}
+
 baseline:
   kind: periodic           # periodic | snr_threshold (what the 'Baseline' curve means)
   m_fixed: 2
@@ -129,7 +167,8 @@ metrics:
 schemes:
   main: [Exact, Optimised, Proposed, Baseline]
   supplementary: [prediction_only, importance_only, snr_threshold, full_feedback,
-                  Proposed_no_confidence, Proposed_no_importance]
+                  Proposed_no_importance, Proposed_plugin, Optimised_plugin,
+                  Proposed_risk, fill_periodic, fill_age, fill_uncertainty, fill_importance, fill_channel]
 
 sweeps:
   budget:         {param: feedback.budget_frac, values: [0.05, 0.1, 0.2, 0.3, 0.5, 0.75, 1.0]}

@@ -13,6 +13,7 @@ step() { echo; echo "=== $* ==="; }
 step "tests";                 "$PYTHON" -m pytest -q
 step "Q calibration";         "$PYTHON" scripts/calibrate_q.py
 step "TVCSI table (default)"; "$PYTHON" scripts/fit_tvcsi_table.py
+step "S4 estimator";          "$PYTHON" scripts/fit_estimator.py
 step "sweeps + runtime";      "$PYTHON" -m tvcsi.sweep
 step "figures";               "$PYTHON" -m tvcsi.plots
 step "summary";               "$PYTHON" scripts/make_summary.py

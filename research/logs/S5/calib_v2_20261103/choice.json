@@ -1,0 +1,76 @@
+{
+ "beta": 0.2,
+ "admissible_betas": [
+  0.2
+ ],
+ "eps_target": 0.1,
+ "points": [
+  {},
+  {
+   "feedback.budget_frac": 0.1
+  },
+  {
+   "channel.speed_kmh": 60.0
+  },
+  {
+   "importance.crit_share": 0.5
+  }
+ ],
+ "val_seeds": [
+  2000,
+  2001,
+  2002,
+  2003,
+  2004
+ ],
+ "table": [
+  {
+   "beta": 0.0,
+   "mean_utility": 2.7670257499270985,
+   "worst_point_violation": 0.13494104863875117,
+   "admissible": false
+  },
+  {
+   "beta": 0.01,
+   "mean_utility": 2.751797583901171,
+   "worst_point_violation": 0.10963089363091896,
+   "admissible": false
+  },
+  {
+   "beta": 0.02,
+   "mean_utility": 2.747042215903391,
+   "worst_point_violation": 0.105537895066195,
+   "admissible": false
+  },
+  {
+   "beta": 0.05,
+   "mean_utility": 2.7369797849224504,
+   "worst_point_violation": 0.10259554594838591,
+   "admissible": false
+  },
+  {
+   "beta": 0.1,
+   "mean_utility": 2.728128558386411,
+   "worst_point_violation": 0.10285801477691262,
+   "admissible": false
+  },
+  {
+   "beta": 0.2,
+   "mean_utility": 2.712223214966998,
+   "worst_point_violation": 0.09973047986010347,
+   "admissible": true
+  },
+  {
+   "beta": 0.5,
+   "mean_utility": 2.6829663825344383,
+   "worst_point_violation": 0.10061581080060933,
+   "admissible": false
+  },
+  {
+   "beta": 1.0,
+   "mean_utility": 2.664363882914225,
+   "worst_point_violation": 0.10110358949613123,
+   "admissible": false
+  }
+ ]
+}

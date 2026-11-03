@@ -1,0 +1,11 @@
+Baseline                 identical=False
+Exact                    identical=True
+Optimised                identical=True
+Proposed                 identical=True
+Proposed_no_confidence   identical=True
+Proposed_no_importance   identical=True
+periodic                 identical=False
+snr_threshold            identical=True
+importance_only          identical=True
+prediction_only          identical=True
+full_feedback            identical=True

@@ -1,0 +1,81 @@
+estimator data: train 240000 samples, val 240000 samples (49s)
+  leaf 25: val MAE 0.1312  gain corr [0.282, 0.342, 0.372]
+  leaf 50: val MAE 0.1317  gain corr [0.287, 0.346, 0.375]
+  leaf 100: val MAE 0.1324  gain corr [0.288, 0.347, 0.376]
+chosen min_samples_leaf = 100 (74s)
+dummy: estimator estimator_8d2408872161.joblib, validation gain corr [0.288, 0.347, 0.376]
+estimator data: train 240000 samples, val 240000 samples (57s)
+  leaf 25: val MAE 0.1274  gain corr [0.295, 0.36, 0.378]
+  leaf 50: val MAE 0.1279  gain corr [0.3, 0.364, 0.383]
+  leaf 100: val MAE 0.1287  gain corr [0.303, 0.367, 0.386]
+chosen min_samples_leaf = 100 (82s)
+codec+persistence: estimator estimator_266dd335e39c.joblib, validation gain corr [0.303, 0.367, 0.386]
+estimator data: train 240000 samples, val 240000 samples (504s)
+  leaf 25: val MAE 0.1262  gain corr [0.296, 0.359, 0.377]
+  leaf 50: val MAE 0.1266  gain corr [0.3, 0.363, 0.381]
+  leaf 100: val MAE 0.1273  gain corr [0.301, 0.365, 0.383]
+chosen min_samples_leaf = 100 (537s)
+codec+GRU: estimator estimator_4cb21e2e961f.joblib, validation gain corr [0.301, 0.365, 0.383]
+                                   utility       bits  regret  violation_rate_feasible  crit_worst_violation_feasible
+setup             scheme                                                                                             
+dummy             Exact             2.8328    22.2232  0.2577                   0.0104                         0.0127
+                  Proposed          2.7789   256.0000  0.1803                   0.0506                         0.0583
+                  Proposed_risk     2.7707   256.0000  0.2064                   0.0400                         0.0451
+                  Baseline          2.7258   256.0000  0.1291                   0.1078                         0.1186
+                  fill_importance   2.6968   256.0000  0.2456                   0.1819                         0.1990
+                  fill_age          2.6836   256.0000  0.1638                   0.1497                         0.1608
+                  fill_periodic     2.6327   256.0000  0.2062                   0.1977                         0.2101
+                  importance_only   2.6968   256.0000  0.2456                   0.1819                         0.1990
+                  prediction_only   1.2497     0.0000  0.7210                   0.7212                         0.8307
+                  full_feedback     2.8088  1024.0000  0.0440                   0.0290                         0.0345
+                  BestBeam_oracle   2.8438        NaN  0.0000                   0.0000                         0.0000
+codec+persistence Exact             2.8328    20.2897  0.2571                   0.0108                         0.0139
+                  Proposed          2.7741   255.9865  0.1605                   0.0537                         0.0634
+                  Proposed_risk     2.7731   255.9882  0.1653                   0.0516                         0.0611
+                  Baseline          2.7286   256.0000  0.1239                   0.1046                         0.1201
+                  fill_importance   2.6836   256.0000  0.2547                   0.1943                         0.2129
+                  fill_age          2.6737   256.0000  0.1729                   0.1578                         0.1720
+                  fill_periodic     2.6217   256.0000  0.2150                   0.2069                         0.2206
+                  importance_only   2.6836   256.0000  0.2547                   0.1943                         0.2129
+                  prediction_only   1.2497     0.0000  0.7210                   0.7212                         0.8307
+                  full_feedback     2.7982  1024.0000  0.0572                   0.0399                         0.0476
+                  BestBeam_oracle   2.8438        NaN  0.0000                   0.0000                         0.0000
+codec+GRU         Exact             2.8309    24.3453  0.2580                   0.0129                         0.0162
+                  Proposed          2.7689   255.9983  0.1729                   0.0562                         0.0648
+                  Proposed_risk     2.7655   255.9949  0.1809                   0.0518                         0.0593
+                  Baseline          2.7253   256.0000  0.1304                   0.1116                         0.1294
+                  fill_importance   2.6825   256.0000  0.2586                   0.1978                         0.2213
+                  fill_age          2.6661   256.0000  0.1849                   0.1701                         0.1865
+                  fill_periodic     2.6193   256.0000  0.2213                   0.2134                         0.2266
+                  importance_only   2.6825   256.0000  0.2586                   0.1978                         0.2213
+                  prediction_only   1.2497     0.0000  0.7210                   0.7212                         0.8307
+                  full_feedback     2.7982  1024.0000  0.0572                   0.0399                         0.0476
+                  BestBeam_oracle   2.8438        NaN  0.0000                   0.0000                         0.0000
+
+== dummy: Proposed - other
+     ref           other  n  mean_diff   ci95  wins   p  p_holm
+Proposed   fill_periodic 10     0.1462 0.0101    10 0.0     0.0
+Proposed        fill_age 10     0.0954 0.0093    10 0.0     0.0
+Proposed fill_importance 10     0.0821 0.0088    10 0.0     0.0
+Proposed importance_only 10     0.0821 0.0088    10 0.0     0.0
+Proposed        Baseline 10     0.0532 0.0057    10 0.0     0.0
+
+== codec+persistence: Proposed - other
+     ref           other  n  mean_diff   ci95  wins   p  p_holm
+Proposed   fill_periodic 10     0.1525 0.0120    10 0.0     0.0
+Proposed        fill_age 10     0.1004 0.0080    10 0.0     0.0
+Proposed fill_importance 10     0.0905 0.0110    10 0.0     0.0
+Proposed importance_only 10     0.0905 0.0110    10 0.0     0.0
+Proposed        Baseline 10     0.0455 0.0075    10 0.0     0.0
+
+== codec+GRU: Proposed - other
+     ref           other  n  mean_diff   ci95  wins   p  p_holm
+Proposed   fill_periodic 10     0.1495 0.0140    10 0.0     0.0
+Proposed        fill_age 10     0.1028 0.0107    10 0.0     0.0
+Proposed        Baseline 10     0.0435 0.0053    10 0.0     0.0
+Proposed fill_importance 10     0.0863 0.0113    10 0.0     0.0
+Proposed importance_only 10     0.0863 0.0113    10 0.0     0.0
+
+real	13m54.077s
+user	0m0.015s
+sys	0m0.016s
