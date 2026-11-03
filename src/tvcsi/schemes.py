@@ -14,6 +14,7 @@ from typing import Callable
 
 import numpy as np
 
+from .importance import CRITICAL
 from .solvers import dp_mckp, greedy_tvcsi
 
 
@@ -76,6 +77,65 @@ def fill_in_order(order: np.ndarray, m: int, costs: np.ndarray, budget: float, K
     return modes
 
 
+def fill_largest(order: np.ndarray, costs: np.ndarray, budget: float, K: int) -> np.ndarray:
+    """S5, faculty baseline rule (TaskVoCSI_v2 policy.baseline_modes): walk the users in `order` and
+    give each the LARGEST mode that still fits the remaining budget; stop at the first user for whom
+    no mode > 0 fits. So the budget is filled instead of leaving bits unused."""
+    modes = np.zeros(K, dtype=np.int64)
+    left = float(budget)
+    for k in order:
+        m = int(np.flatnonzero(costs <= left + 1e-9).max())
+        if m == 0:
+            break
+        modes[k] = m
+        left -= float(costs[m])
+    return modes
+
+
+def belief_margin(ghat0: np.ndarray) -> np.ndarray:
+    """(top1 - top2) / top1 of the predicted beam gains: small = the gNB is unsure which beam is best."""
+    g = np.sort(ghat0, axis=1)
+    return (g[:, -1] - g[:, -2]) / (g[:, -1] + 1e-6)
+
+
+# S5: the five faculty baselines (name -> user order). All use only gNB-side information.
+FILL_ORDERS = {
+    "fill_periodic": lambda inp: np.roll(np.arange(len(inp.v)), -(inp.t % len(inp.v))),   # round robin
+    "fill_age": lambda inp: np.argsort(-inp.age, kind="stable"),              # oldest report first
+    "fill_uncertainty": lambda inp: np.argsort(belief_margin(inp.ghat0), kind="stable"),
+    "fill_importance": lambda inp: np.argsort(-inp.v, kind="stable"),         # most important first
+    "fill_channel": lambda inp: np.argsort(inp.ghat0.max(axis=1), kind="stable"),  # weakest believed link first
+}
+
+
+def risk_scheme(name: str, beta: float, eps: float) -> Scheme:
+    """S5 'Proposed_risk': Proposed plus a virtual queue (Lyapunov drift-plus-penalty) per critical user.
+
+    Z_k(t+1) = max(Z_k(t) + p_k(t) - max(eps, p_k^best(t)), 0), where p_k(t) is the estimated
+    outage probability Pr[Q_k < Q_min] of the mode chosen for critical user k and p_k^best(t) the
+    smallest one over all modes (S4 estimator, gNB-side). Z_k grows only while a critical user's
+    expected violations run above the target eps AND above what any mode could achieve, i.e. only
+    for avoidable violations (cf. the Phase 1 feasibility split). Without the max(eps, p^best) term
+    the queue of a user whom no mode can protect grows forever and takes the whole budget (first
+    calibration, research/logs/S5/01_calibrate_risk_v1.log). Z_k then raises the value of feedback
+    for that user:  value[k][m] = v_k E[Q_k^m] - beta Z_k Pr[Q_k^m < Q_min].
+    beta = 0 gives exactly Proposed. The queue lives in the scheme (one per simulate call)."""
+    state = {"Z": None}
+
+    def decide(inp, _):
+        K = len(inp.v)
+        if state["Z"] is None:
+            state["Z"] = np.zeros(K)
+        Z = state["Z"] * (inp.types == CRITICAL)
+        values = inp.U_hat - beta * Z[:, None] * inp.p_out if beta else inp.U_hat
+        modes = greedy_tvcsi(values, inp.costs, inp.budget)
+        chosen_p = inp.p_out[np.arange(K), modes]
+        target = np.maximum(eps, inp.p_out.min(axis=1))
+        state["Z"] = np.maximum(Z + (inp.types == CRITICAL) * (chosen_p - target), 0.0)
+        return modes
+    return Scheme(name, decide, "learned")
+
+
 def build_scheme(name: str, cfg: dict, rng: np.random.Generator | None = None) -> Scheme:
     """Construct a scheme by name. 'Baseline' resolves to cfg.baseline.kind."""
     m_fixed = cfg["baseline"]["m_fixed"]
@@ -113,6 +173,11 @@ def build_scheme(name: str, cfg: dict, rng: np.random.Generator | None = None) -
         return Scheme(name, greedy, "no_confidence")
     if name == "Proposed_plugin_no_importance":
         return Scheme(name, greedy, "no_importance")
+    if name == "Proposed_risk":
+        return risk_scheme(name, float(cfg["risk"]["beta"]), float(cfg["risk"]["eps_target"]))
+    if name in FILL_ORDERS:
+        order = FILL_ORDERS[name]
+        return Scheme(name, lambda inp, _: fill_largest(order(inp), inp.costs, inp.budget, len(inp.v)))
     if name == "periodic":
         return Scheme(name, periodic)
     if name == "snr_threshold":

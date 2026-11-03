@@ -123,6 +123,16 @@ estimator:                 # S4: learned per-mode quality estimator used by Opti
   max_features: 0.8
   random_state: 17
 
+risk:                      # S5: virtual queue for critical users, scheme Proposed_risk (schemes.risk_scheme)
+  eps_target: 0.10         # target outage share per critical user (= constraints.eps_violation, which schemes never read)
+  beta: 0.2                # queue weight; set by research/logs/S5/calibrate_risk.py on VALIDATION seeds (ASSUMPTIONS P31)
+  beta_grid: [0.0, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1.0]
+  calib_points:            # configurations the weight is chosen on: default + hard points for critical users
+    - {}
+    - {feedback.budget_frac: 0.1}
+    - {channel.speed_kmh: 60.0}
+    - {importance.crit_share: 0.5}
+
 baseline:
   kind: periodic           # periodic | snr_threshold (what the 'Baseline' curve means)
   m_fixed: 2
@@ -144,7 +154,8 @@ metrics:
 schemes:
   main: [Exact, Optimised, Proposed, Baseline]
   supplementary: [prediction_only, importance_only, snr_threshold, full_feedback,
-                  Proposed_no_importance, Proposed_plugin, Optimised_plugin]
+                  Proposed_no_importance, Proposed_plugin, Optimised_plugin,
+                  Proposed_risk, fill_periodic, fill_age, fill_uncertainty, fill_importance, fill_channel]
 
 sweeps:
   budget:         {param: feedback.budget_frac, values: [0.05, 0.1, 0.2, 0.3, 0.5, 0.75, 1.0]}

@@ -60,12 +60,12 @@ def _table_cfg(cfg: dict) -> dict:
     Excluded: schemes/sweeps/paths/plots/runtime (bookkeeping); the evaluation-only constraints (no
     decision reads them); and quality/radio/link_level, because the table holds beam REGRET only and
     the fitting policies (prediction_only, random modes) never look at Q, so no fitted number depends
-    on the quality model (tests/test_phase2_quality.py checks this). The S4 `estimator` section is
-    excluded too: the plug-in table does not use it.
+    on the quality model (tests/test_phase2_quality.py checks this). The S4 `estimator`
+    and S5 `risk` sections are excluded too: the plug-in table does not use them.
     """
     return {k: v for k, v in cfg.items()
             if k not in ("sweeps", "schemes", "paths", "plots", "runtime", "constraints",
-                         "quality", "radio", "link_level", "estimator")}
+                         "quality", "radio", "link_level", "estimator", "risk")}
 
 
 def get_table(cfg: dict) -> TVCSITable:

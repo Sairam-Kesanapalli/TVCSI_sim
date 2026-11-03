@@ -307,6 +307,32 @@ differ, the prompt was followed.
     identically by `python scripts/fit_estimator.py` (~1.5 min on 8 cores). Prediction runs
     single-threaded (`n_jobs = 1`); a thread pool per call was 4x slower.
 
+## Stage S5: five faculty baselines and risk handling for critical users
+
+64. **Five faculty baselines** (`schemes.FILL_ORDERS`, names `fill_*`): users are visited in a fixed
+    order and each gets the LARGEST mode that still fits the remaining budget (faculty
+    `taskv2/policy.py::baseline_modes`, re-stated and tested literally in
+    `tests/test_s5_baselines_risk.py`). Orders: `fill_periodic` round robin (roll by t mod K),
+    `fill_age` oldest report first (never fed back first), `fill_uncertainty` smallest belief margin
+    (top1 - top2) / top1 first, `fill_importance` largest v first, `fill_channel` weakest believed link
+    (max ghat0) first. The prefix keeps them apart from the spec baselines `periodic` (Baseline,
+    fixed mode 2), `importance_only` and `snr_threshold`. Our side track serves every user, so the
+    faculty's separate service selection for baselines does not apply.
+65. **Risk handling = virtual queue** (`Proposed_risk`, `schemes.risk_scheme`), not the faculty
+    soft penalty (shown inert in S2). Per critical user
+    Z_k(t+1) = max(Z_k(t) + p_k(t) - max(eps_target, p_k^best(t)), 0) with p the S4 outage
+    estimate of the chosen mode and p^best the smallest over the modes; values
+    v_k E[Q_k^m] - beta Z_k Pr[Q_k^m < Q_min] go to the same greedy solver as Proposed. Only gNB-side
+    quantities enter (tamper-tested); beta = 0 is exactly Proposed (tested).
+66. **Why max(eps, p^best).** The first version used Z + p - eps. For a critical user whom no
+    mode can bring under eps the queue then grew forever and took the whole budget; every beta > 0
+    cost 0.5-0.6 utility while hardly lowering the worst violation (validation,
+    `research/logs/S5/01_calibrate_risk_v1.log`). Counting only avoidable expected violations
+    mirrors the Phase 1 feasibility split.
+67. **Statistics** (`src/tvcsi/stats.py::paired_holm`): seed-paired differences, two-sided one-sample
+    t-test, Holm correction over the compared baselines (as faculty `taskv2/eval.py`); one test seed =
+    one replicate.
+
 ## Parameter values: what, why, how, where
 
 Every number added in Phase 1, in the same format. "Source" is the document the value comes from;
@@ -595,4 +621,21 @@ standard value exists, this is said explicitly and the value is stress-tested in
 **P29. Exploration policies (`estimator.fit_p0`)**
 * Value: **{0.5, 0.75, 0.9, 0.98}** = probability of mode 0 per user and slot.
 * Why: the plug-in table used {0.5, 0.9, 0.98} (item 19); 0.75 was added to cover medium ages.
+
+**P30. Risk target (`risk.eps_target`)**
+* Value: **0.10** = `constraints.eps_violation` (the evaluation target of Eqs. 34 / 39j, from
+  TS 38.214 5.2.2.1, see P1). Kept as a separate key because schemes never read `constraints`.
+
+**P31. Queue weight (`risk.beta`)**
+* Value: **0.2**, chosen on the VALIDATION seeds by the rule in `research/logs/S5/calibrate_risk.py`
+  (admissible if the worst critical user's feasible-slot violation, averaged over the validation
+  seeds, is <= eps_target at every calibration point; then highest mean utility).
+* Grid {0, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1}. Only 0.2 was admissible, and only just (worst
+  point 0.0997 at budget 0.1; 0.5 and 1.0 gave 0.1006 / 0.1011), so the choice is fragile: the
+  budget-0.1 point is close to the limit of what any weight achieves.
+* Where: `research/logs/S5/calib_v2_20261103/choice.json`, `01_calibrate_risk_v2.log`.
+
+**P32. Calibration points (`risk.calib_points`)**
+* Value: default; budget_frac 0.1; speed 60 km/h; crit_share 0.5: the points where critical users
+  are hardest to protect (small budget, stale predictions, many critical users competing).
 
