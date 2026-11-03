@@ -46,7 +46,7 @@ Python 3.11+ (3.13 used). Two separate environments, so the tracks cannot interf
 # side track (repository root)
 python -m venv ../venvs/tvcsi_combined
 ../venvs/tvcsi_combined/Scripts/python -m pip install -e . pytest        # Linux/macOS: bin/python
-../venvs/tvcsi_combined/Scripts/python -m pip install scikit-learn joblib  # needed from S4
+#   (scikit-learn and joblib, needed since S4, are installed by `pip install -e .`)
 #   only for re-measuring the 5G quality curves or for S6 training:
 #   pip install torch --index-url https://download.pytorch.org/whl/cu128   (or .../whl/cpu without a GPU)
 #   pip install sionna-no-rt==2.2.0

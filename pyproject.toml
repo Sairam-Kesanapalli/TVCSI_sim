@@ -6,11 +6,15 @@ build-backend = "setuptools.build_meta"
 name = "tvcsi"
 version = "0.1.0"
 requires-python = ">=3.11"
-dependencies = ["numpy", "scipy", "matplotlib", "pandas", "pyyaml"]
+# scikit-learn + joblib: the S4 learned estimator (ExtraTrees, cached with joblib) used by Proposed /
+# Optimised, the test fixture `estimator` and every sweep (review fix, Codex finding on PR #3).
+dependencies = ["numpy", "scipy", "matplotlib", "pandas", "pyyaml", "scikit-learn", "joblib"]
 
 [project.optional-dependencies]
-# Only for re-measuring the task-quality curves (scripts/measure_q.py). The simulator itself reads
-# the committed data/q_curves.csv and needs none of this. Install torch from the CPU index first:
+# Only for re-measuring the task-quality curves (scripts/measure_q.py; torch + sionna) and for
+# re-training the S6 models (scripts/train_models.py; torch only). The simulator itself reads the
+# committed data/q_curves.csv and data/models/s6_models.npz and needs none of this. Install torch
+# from the CPU index first:
 #   pip install torch --index-url https://download.pytorch.org/whl/cpu
 linklevel = ["torch>=2.9.1", "sionna-no-rt==2.2.0"]
 

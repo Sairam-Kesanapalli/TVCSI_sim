@@ -1,0 +1,16 @@
+Address Codex review findings on PR #1 and PR #3
+
+- pyproject.toml: declare scikit-learn and joblib (needed by the S4 estimator, its test
+  fixture and every sweep); a clean `pip install -e .` failed before (PR #3, P1).
+- src/tvcsi/estimator.py: the estimator cache key now includes the CONTENTS of the trained
+  weights file and of data/q_curves.csv (text hashed with LF line endings), so re-training or
+  re-measuring into the same file can no longer reuse a stale estimator (PR #3, P2). Cache
+  files renamed; refits verified identical to the old reports. tests/test_estimator_cache_key.py.
+- scripts/measure_q.py + ASSUMPTIONS P24: the repetition below the mother-code rate starts
+  slightly before the NR circular buffer would (PR #1, P2). Quantified per curve: <= 0.05 dB
+  for 8 curves, 0.15 dB for background at 16 PRB, pessimistic, below the 0.25 dB measurement
+  step; documented, curves not re-measured.
+
+Evidence: research/logs/review_codex/. Tests: 74 passed.
+
+Co-authored-by: Durgesh Janapareddy <durgeshjanapareddy9@gmail.com>

@@ -364,6 +364,11 @@ differ, the prompt was followed.
 73. **One estimator per model setup.** The S4 estimator learns from what the predictor and codec
     produce, so each model setup gets its own (the cache hash covers `models` and, when
     `models: trained`, the `trained` section; with dummy models that section is ignored).
+    Review fix (Codex finding on PR #3): the hash also covers the **contents** of the weights file
+    and of `data/q_curves.csv` (text hashed with LF line endings), so re-training or re-measuring
+    into the same file can no longer reuse a stale estimator. This renamed the cache files
+    (default `8d2408872161` → `2d856f90b8cd`, final `266dd335e39c` → `8c3b3538564b`); the refits are
+    identical (deterministic), the old `.json` reports are kept as records.
     Validation gain correlation: dummy 0.29 / 0.35 / 0.38; trained codec + persistence
     0.30 / 0.37 / 0.39; trained codec + GRU 0.30 / 0.37 / 0.38.
 
@@ -625,6 +630,19 @@ standard value exists, this is said explicitly and the value is stress-tested in
 * History: the first version used 1/5 for both graphs; the BG1 curve (critical, K = 2) then failed
   at start-up. Since then every run starts with a preflight that builds all 18 chains and checks
   0/8 errors at 40 dB and 8/8 at -20 dB.
+* **Known deviation (review, Codex finding on PR #1), quantified, not re-measured.** Repetition
+  starts at K'/R_mother distinct coded bits per code block (Sionna's lower rate limit), while NR rate
+  matching first sends its whole circular buffer, N_cb − filler = 44 Zc + K' (BG1) / 40 Zc + K' (BG2)
+  (TS 38.212 5.4.2.1; LBRM inactive at these TB sizes), and repeats only after that. So the 9
+  repetition curves send 40–808 fewer distinct parity bits per code block than NR (e.g. background,
+  33 PRB: 5240 instead of 5536), i.e. repeat slightly early, which makes those curves slightly
+  **pessimistic** (higher BLER). Estimated penalty with the Gaussian-capacity approximation:
+  0.004–0.053 dB for 8 curves, 0.15 dB for background at 16 PRB (used only at K = 16); the 9 curves
+  without repetition, including every critical curve of K ≥ 4, are exact. All are below the 0.25 dB
+  measurement step, so the curves were not re-measured (that would take hours on the GPU and a rerun
+  of S4–S7). Script and table: `research/logs/review_codex/ncb_check.py`, `01_ncb_check.log`. If the
+  curves are ever re-measured, Sionna's encoder cannot produce more than K'/R_mother bits; the extra
+  parity would need the full mother codeword (e.g. a custom rate matcher).
 * Approximation: 3GPP first sends the parity bits that lie between Sionna's 1/5 limit and the end of
   its circular buffer (at most 4 x the filler bits, ~5% of the codeword) before repeating; repeating
   earlier makes our curves very slightly pessimistic. Sanity check: the MCS 0 curve reaches BLER 0.1

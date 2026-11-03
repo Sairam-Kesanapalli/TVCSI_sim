@@ -217,13 +217,43 @@ def fit_estimator(cfg: dict, log=print) -> QualityEstimator:
 
 # ----------------------------------------------------------------------------- cache
 
+_TEXT_SUFFIXES = (".csv", ".json", ".yaml", ".yml", ".txt")
+
+
+def _file_sha256(cfg: dict, rel: str) -> str:
+    """Content hash of a file named in the config ('missing' if it does not exist). Text files are
+    hashed with LF line endings, so a Windows checkout (git core.autocrlf: CRLF on disk) gives the
+    same key as any other computer."""
+    p = resolve_path(cfg, rel)
+    if not p.is_file():
+        return "missing"
+    data = p.read_bytes()
+    if p.suffix.lower() in _TEXT_SUFFIXES:
+        data = data.replace(b"\r\n", b"\n")
+    return hashlib.sha256(data).hexdigest()
+
+
 def _fit_spec(cfg: dict) -> dict:
-    """Everything the fitted model depends on (the hash names the cache file)."""
+    """Everything the fitted model depends on (the hash names the cache file).
+
+    Files the estimator's training data depend on enter by CONTENT, not only by path (review fix):
+    the trained-model weights (re-running scripts/train_models.py overwrites the same file) and the
+    measured quality curves (re-running scripts/measure_q.py overwrites data/q_curves.csv). Otherwise
+    a stale cached estimator, fitted against the old weights / curves, would be reused silently.
+    """
     keep = ("system", "channel", "link", "quality", "radio", "importance", "feedback", "dummy",
             "models", "trained", "estimator", "sim")
     spec = {k: cfg[k] for k in keep if not (k == "trained" and cfg["models"] == "dummy")}
     spec["seeds"] = {"train": cfg["seeds"]["train"], "val": cfg["seeds"]["val"]}
     spec["estimator"] = {k: v for k, v in cfg["estimator"].items() if k != "cache_dir"}
+    files = {}
+    if cfg["models"] == "trained":
+        for k, v in sorted((cfg["trained"].get("kwargs") or {}).items()):
+            if isinstance(v, str) and resolve_path(cfg, v).is_file():
+                files[f"trained.kwargs.{k}"] = _file_sha256(cfg, v)
+    if cfg["quality"].get("model") == "measured":
+        files["quality.curves"] = _file_sha256(cfg, cfg["quality"]["curves"])
+    spec["file_contents"] = files
     return spec
 
 
