@@ -95,7 +95,7 @@ git checkout research/stages-s0-s7
 | `data/q_curves.csv` (+ `_meta.json`, `q_validation.csv`, `carrier_selection.csv`) | Phase 2 measured quality curves (18 curves, Sionna 5G NR PDSCH, validated) |
 | `scripts/measure_q.py` | re-measures the curves (needs GPU + torch + sionna; ~hours; normally **not** needed) |
 | `scripts/` (others) | table fitting, summary, sensitivity, dataset export, `run_all.sh` |
-| `tests/` | pytest suite: **39 passed, 1 xfailed** expected before S4 |
+| `tests/` | pytest suite: **70 passed, 1 skipped** after S7 (71 passed if sionna is installed; 39 passed + 1 xfailed before S4) |
 | `results/`, `figures/` | Phase 2 side-track results (default point and sweeps) |
 | `research/faculty_TaskVoCSI_v2/` | **faculty code, unmodified** + its run results in `results/{smoke,full}_{surrogate,digits}_20261103/` (incl. trained `networks.pt`, `calibrator.joblib`) |
 | `research/S2_analysis/` | S2 analysis script, tables T1–T7, figures F1–F6 |
@@ -128,7 +128,8 @@ can be served (details: `S2_faculty_results.md`).
 
 1. **Never modify the faculty code** in `research/faculty_TaskVoCSI_v2/`. Check it at every
    checkpoint with `python research/tools/verify_faculty.py` → expected
-   `files=23 match=23 mismatch=0 missing=0` (the `extra` files are run outputs under `results/`).
+   `match=23 mismatch=0 missing=0` on both lines ("committed (git HEAD)" and "working tree"). On Windows
+   the working-tree line may add "(23 need line-ending normalisation)": harmless, git converted LF to CRLF.
 2. **Never overwrite results**: every run writes to a new dated folder.
 3. **Preserve Phase 1 and Phase 2** behaviour; the Phase 2 regression tests must keep passing.
 4. **Validate before sweeping**: tests + a small smoke run before any full sweep.
@@ -154,7 +155,7 @@ Python 3.11+ (3.13 used). Keep virtual environments **outside** the repository.
 ```bash
 python -m venv ../venvs/tvcsi_combined
 ../venvs/tvcsi_combined/Scripts/python -m pip install -e . pytest scikit-learn joblib   # Linux/macOS: bin/python
-../venvs/tvcsi_combined/Scripts/python -m pytest -q          # expect: 39 passed, 1 xfailed
+../venvs/tvcsi_combined/Scripts/python -m pytest -q          # expect: 70 passed, 1 skipped (first run fits the estimator, ~2-5 min)
 ```
 
 torch is needed only for S6 (training) or re-measuring Q (`pip install -e .[linklevel]`).

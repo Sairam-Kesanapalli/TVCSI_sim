@@ -50,7 +50,7 @@ python -m venv ../venvs/tvcsi_combined
 #   only for re-measuring the 5G quality curves or for S6 training:
 #   pip install torch --index-url https://download.pytorch.org/whl/cu128   (or .../whl/cpu without a GPU)
 #   pip install sionna-no-rt==2.2.0
-../venvs/tvcsi_combined/Scripts/python -m pytest -q        # expect: 39 passed, 1 xfailed (until S4)
+../venvs/tvcsi_combined/Scripts/python -m pytest -q        # expect: 70 passed, 1 skipped (71 passed with sionna; 39 + 1 xfailed before S4)
 
 # main track (faculty code; CPU only by design)
 python -m venv ../venvs/taskv2

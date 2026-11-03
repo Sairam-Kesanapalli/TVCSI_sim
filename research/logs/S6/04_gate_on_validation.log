@@ -1,0 +1,15 @@
+validation seeds: [2000, 2001, 2002, 2003, 2004]
+  test default: GRU regret 0.2906 acc 0.5079 | persistence regret 0.2928 acc 0.5096 | gain (0.0022586613893508913, 0.004564600968409694) (3/10) | conf Brier 0.2292
+  test speed3: GRU regret 0.0969 acc 0.7636 | persistence regret 0.1035 acc 0.7609 | gain (0.006669922173023224, 0.005353065096708717) (5/10) | conf Brier 0.1524
+  test speed60: GRU regret 0.4197 acc 0.3709 | persistence regret 0.4394 acc 0.3519 | gain (0.01973292827606201, 0.010543552761632168) (5/10) | conf Brier 0.2300
+  test snr5: GRU regret 0.4767 acc 0.3597 | persistence regret 0.5530 acc 0.3073 | gain (0.07629120945930482, 0.0204633467954389) (5/10) | conf Brier 0.2124
+  test codec trained: {'regret_per_mode': [0.1558, 0.0774, 0.057], 'acc_per_mode': [0.6996, 0.7891, 0.8183]}
+  test codec dummy:   {'regret_per_mode': [0.1924, 0.0827, 0.0434], 'acc_per_mode': [0.6302, 0.7725, 0.8443]}
+
+=== S6 gate on VALIDATION seeds ===
+default  persistence - GRU regret = +0.0023 +/- 0.0046  (GRU better in 3/5 seeds): not significant
+speed3   persistence - GRU regret = +0.0067 +/- 0.0054  (GRU better in 5/5 seeds): GRU significantly better
+speed60  persistence - GRU regret = +0.0197 +/- 0.0105  (GRU better in 5/5 seeds): GRU significantly better
+snr5     persistence - GRU regret = +0.0763 +/- 0.0205  (GRU better in 5/5 seeds): GRU significantly better
+gate (default point): GRU fails -> keep persistence
+codec regret per mode (32/64/128 bit): trained [0.1558, 0.0774, 0.057]  dummy [0.1924, 0.0827, 0.0434]

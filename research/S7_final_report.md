@@ -3,7 +3,11 @@
 **Date:** 2026-11-03. **Branch:** `research/s3-s7-maruthi` (PR into `research/stages-s0-s7`).
 **Final configuration:** `configs/final.yaml` (= `configs/default.yaml` + trained models + dated output folders).
 **Final results:** `results/final_20261103/` (`summary.md`, CSVs) and `figures/final_20261103/`.
-Every number below is on the **test seeds 1000–1009**, never used for training or tuning.
+Every number below is on the **test seeds 1000–1009**, never used for training or tuning. (One
+exception in the procedure, corrected in review: the S6 choices "persistence instead of the GRU" and
+"trained codec" were first read off test-seed diagnostics. Repeated on the validation seeds they come
+out the same, so no number in this report changes; see `checkpoints/S6_checkpoint.md` §5 item 4.)
+**Merged into `main`** via PR #3 (re-opened from PR #2); review patches: `research/logs/review_S3_S7/`.
 
 ---
 
@@ -97,8 +101,10 @@ links are noisy, or more traffic is critical. It shrinks to ≈ 0 when feedback 
 for the 5 resource blocks (S2 §5). Our side track serves every user, so the gain here comes from
 **spending feedback bits on the users whose beam is most likely stale and whose message is most
 valuable**, which is the TVCSI idea of the original formulation (Eq. 32–33). Both tracks agree that
-the trained GRU does not beat persistence on these synthetic channels, and that importance weighting
-matters (smaller in our world: −0.007 utility without it, S4).
+the trained GRU does not beat persistence on these synthetic channels. **Importance weighting is far
+less decisive here than in the faculty world:** removing it costs only about 0.01 utility here
+(−0.007 in the final runs; S4: +0.011 ± 0.004 for Proposed over Proposed_no_importance, 10/10 seeds),
+against 18–20 % in the faculty runs (S2 §5).
 
 ## 5. Limitations (stated plainly)
 
@@ -122,7 +128,7 @@ matters (smaller in our world: −0.007 utility without it, S4).
 ```bash
 python -m venv ../venvs/tvcsi_combined          # outside the repository and outside OneDrive
 ../venvs/tvcsi_combined/Scripts/python -m pip install -e . pytest scikit-learn joblib
-../venvs/tvcsi_combined/Scripts/python -m pytest -q                       # 70 passed, 1 skipped (sionna)
+../venvs/tvcsi_combined/Scripts/python -m pytest -q                       # 70 passed, 1 skipped (71 passed if sionna is installed)
 python scripts/fit_estimator.py                                           # S4 estimator (default config)
 python scripts/train_models.py                                            # S6, needs torch (CPU); weights are committed
 python research/logs/S7/make_final_config.py                              # configs/final.yaml
