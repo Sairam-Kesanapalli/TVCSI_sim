@@ -1,0 +1,7 @@
+default seed 1000: done
+default seed 1001: done
+default seed 1002: done
+K6_speed60_crit05 seed 1000: done
+K6_speed60_crit05 seed 1001: done
+K6_speed60_crit05 seed 1002: done
+wrote C:\Users\palya\OneDrive\Desktop\TVCSI_sim\research\logs\S3\golden_pre_S3.npz (138 arrays) at commit 2a55102a7fa1cf5bb3f68b25b1f5ee87640ab8d7

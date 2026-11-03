@@ -1,6 +1,6 @@
 # HANDOFF — start here (for collaborators and their AI agents)
 
-**Last updated: 2026-11-03, after S2 (commit `a20bcb5`). Next stage: S3.**
+**Last updated: 2026-11-03, after S3 (see `checkpoints/S3_checkpoint.md`). Next stage: S4.**
 
 This file is the entry point for anyone continuing the project on another computer. It says what
 the project is, what is finished, where every piece of earlier work lives, which rules apply, and
@@ -44,8 +44,8 @@ a checkpoint document and a stop for the group's approval):
 | S0 | backups, workspace, environments, integrity manifests | done |
 | S1 | run the faculty code completely (both configurations), unmodified | done |
 | S2 | analyse and document the faculty results | done |
-| **S3** | side track: plumbing — give schemes the gNB-side state (decisions bit-identical) | **next** |
-| S4 | side track: learned per-mode quality estimator (frozen), replaces the plug-in | — |
+| S3 | side track: plumbing — give schemes the gNB-side state (decisions bit-identical) | done |
+| **S4** | side track: learned per-mode quality estimator (frozen), replaces the plug-in | **next** |
 | S5 | side track: calibrated risk handling + five faculty baselines + paired Holm statistics | — |
 | S6 | side track: ProgressiveCodec + BeamGRU adapted to our system, trained | — |
 | S7 | final experiments, comparison of both tracks, report | — |

@@ -129,6 +129,11 @@ def simulate(cfg: dict, seed: int, scheme_names: list[str | Scheme], table: TVCS
     if table is None and any(s.estimator for s in schemes):
         raise ValueError("a TVCSI table is required for estimator-based schemes")
     predictors = [make_predictor(K) for _ in schemes]
+    # S3: per-scheme feedback bookkeeping, kept here (not in the predictor) so it is the same for
+    # every predictor type. age = slots since the user's last mode > 0 feedback under this scheme
+    # (1 = previous slot, inf = never), the convention of PersistencePredictor.age.
+    ages = [np.full(K, np.inf) for _ in schemes]
+    last_modes = [np.zeros(K, dtype=np.int64) for _ in schemes]
     users = np.arange(K)
 
     # Raw per-slot records; every metric is computed from them after the loop.
@@ -175,7 +180,10 @@ def simulate(cfg: dict, seed: int, scheme_names: list[str | Scheme], table: TVCS
                                          use_confidence=scheme.estimator != "no_confidence",
                                          use_importance=scheme.estimator != "no_importance")
             U_true = v[:, None] * Q_all if scheme.uses_truth else None
-            modes = scheme.decide(DecisionInputs(t, U_hat, gref, v, costs, budget), U_true)
+            inp = DecisionInputs(t, U_hat, gref, v, costs, budget,
+                                 ghat0=ghat0.copy(), conf=conf.copy(), age=ages[i].copy(),
+                                 last_mode=last_modes[i].copy(), types=real.types.copy())
+            modes = scheme.decide(inp, U_true)
             if not scheme.budget_exempt:
                 assert costs[modes].sum() <= budget + 1e-9, f"{scheme.name} exceeded the feedback budget at t={t}"
 
@@ -191,6 +199,8 @@ def simulate(cfg: dict, seed: int, scheme_names: list[str | Scheme], table: TVCS
             # Step 8: the gNB keeps what it actually has: decoded gains or its own prediction.
             held = np.where((modes > 0)[:, None], shared.ghat_fb[np.maximum(modes - 1, 0), users], ghat0)
             predictors[i].update(held, modes > 0)
+            ages[i] = np.where(modes > 0, 1.0, ages[i] + 1.0)
+            last_modes[i] = np.asarray(modes, dtype=np.int64).copy()
 
     # Evaluation only, after every decision has been taken: the true best-beam oracle and the
     # constraints of P1 that the schemes do not optimise (39a penalties, 39i payload, 39j).

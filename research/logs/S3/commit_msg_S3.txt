@@ -1,0 +1,19 @@
+S3: plumbing, gNB-side state for the schemes (decisions bit-identical)
+
+- src/tvcsi/schemes.py: DecisionInputs gets ghat0, conf, age, last_mode and types,
+  appended after budget, each defaulting to None.
+- src/tvcsi/sim.py: per-scheme age (inf at start, 1 after feedback, +1 per slot) and
+  last_mode bookkeeping in the simulator, not the predictor; all new fields are copies.
+- tests/test_s3_plumbing.py: the S3 gate (11 tests): golden regression against the
+  pre-S3 code, age/last_mode consistency with the persistence predictor, shapes and
+  dtypes, copy safety, no true-channel leak into the new fields.
+- research/logs/S3/: golden_pre_S3.npz and the script that wrote it (seeds 1000-1002,
+  default and K6_speed60_crit05, T = 2000), sensitivity check of the golden test,
+  committed-blob integrity check, test logs.
+- ASSUMPTIONS.md items 53-55; research/checkpoints/S3_checkpoint.md; stage tables in
+  research/README.md and research/HANDOFF.md.
+
+Gate: all 11 schemes' decisions and all metrics bit-identical to commit 2a55102 (6/6
+cases); full suite 49 passed, 1 skipped (sionna not installed), 1 xfailed. Faculty
+code untouched: committed blobs 23/23 match the S0 manifest (the working-tree check
+reports CRLF-only differences on Windows, see the checkpoint).

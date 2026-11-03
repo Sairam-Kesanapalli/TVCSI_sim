@@ -249,6 +249,27 @@ differ, the prompt was followed.
 52. **The link-level tools are optional.** The simulator reads the committed `data/q_curves.csv`;
     only re-measuring needs PyTorch and Sionna (`pip install -e .[linklevel]`).
 
+## Stage S3: gNB-side state for the schemes (plumbing, no behaviour change)
+
+53. **What a scheme may see** (`DecisionInputs` in `src/tvcsi/schemes.py`). Besides t, U_hat,
+    gamma_ref, v, costs and budget, a scheme now receives `ghat0` [K, B] (its own predicted beam
+    gains), `conf` [K] (the predictor's confidence), `age` [K], `last_mode` [K] (int64) and `types`
+    [K] (message types). All five default to None, so older constructor calls still work, and the
+    simulator passes copies, so a scheme cannot alter the simulator state. None of them is derived
+    from the true channel (tested with the tamper test in `tests/test_s3_plumbing.py`). No existing
+    scheme reads them yet; S4/S5 will.
+54. **Age convention.** `age` = slots since this scheme last let the user feed back (mode > 0):
+    1 right after feedback in the previous slot, +1 per slot without feedback, `inf` before the
+    first feedback. `last_mode` = the mode chosen in the previous slot, 0 at t = 0. Both are kept
+    per scheme in `sim.py`, not in the predictor, so they mean the same for any predictor (the S6
+    GRU included). This is exactly `PersistencePredictor.age`, so with dummy models
+    conf = exp(-age / tau) holds exactly. The faculty `History` differs (age 25 at start, 0 right
+    after feedback, capped at 100 in its features): when S4 ports its features, use
+    faculty_age = our_age - 1 with inf -> 25, and document it there.
+55. **No new parameter values in S3.** No config default, scheme, estimator, solver or metric was
+    changed; every decision and metric is bit-identical to the pre-S3 code (golden regression,
+    `research/logs/S3/golden_pre_S3.npz`).
+
 ## Parameter values: what, why, how, where
 
 Every number added in Phase 1, in the same format. "Source" is the document the value comes from;

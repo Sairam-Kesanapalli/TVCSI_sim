@@ -1,7 +1,9 @@
 """Feedback-mode scheduling schemes (spec sections 2 and 7).
 
 A scheme sees only DecisionInputs, which hold gNB-side information: estimated utilities, the
-gNB's SINR belief, importance, costs and budget. Only 'Exact' additionally receives the true
+gNB's SINR belief, importance, costs and budget, and (since S3) its predicted beam gains, the
+predictor's confidence, each user's feedback age and last mode, and the message types. None of
+them is derived from the true channel. Only 'Exact' additionally receives the true
 per-mode utilities (its genie role); the simulator passes None to every other scheme.
 """
 from __future__ import annotations
@@ -23,6 +25,14 @@ class DecisionInputs:
     v: np.ndarray              # [K] semantic importance
     costs: np.ndarray          # [M_f + 1] bits per mode
     budget: float              # C_FB_max in bits
+    # S3: further gNB-side state. All optional, so existing constructor calls keep working. The
+    # simulator passes copies, so a scheme cannot change the simulator's own state.
+    ghat0: np.ndarray | None = None      # [K, B] float: this scheme's predicted beam gains
+    conf: np.ndarray | None = None       # [K] float in [0, 1]: the predictor's confidence
+    age: np.ndarray | None = None        # [K] float: slots since this scheme last let the user feed
+                                         #   back (mode > 0); 1 = previous slot, inf = never
+    last_mode: np.ndarray | None = None  # [K] int64: mode this scheme chose in the previous slot (0 at t = 0)
+    types: np.ndarray | None = None      # [K] int: message type (importance.CRITICAL, NORMAL, BACKGROUND)
 
 
 @dataclass(frozen=True)
