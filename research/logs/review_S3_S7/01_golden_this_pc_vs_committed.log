@@ -1,0 +1,10 @@
+138 arrays, 9 differ
+  default/1001/Exact/metrics max |diff|: 2.7755575615628914e-17
+  default/1001/importance_only/metrics max |diff|: 4.440892098500626e-16
+  default/1001/full_feedback/metrics max |diff|: 5.551115123125783e-17
+  K6_speed60_crit05/1001/Baseline/metrics max |diff|: 2.7755575615628914e-17
+  K6_speed60_crit05/1001/periodic/metrics max |diff|: 2.7755575615628914e-17
+  K6_speed60_crit05/1002/Baseline/metrics max |diff|: 5.551115123125783e-17
+  K6_speed60_crit05/1002/Exact/metrics max |diff|: 1.3877787807814457e-17
+  K6_speed60_crit05/1002/periodic/metrics max |diff|: 5.551115123125783e-17
+  K6_speed60_crit05/1002/importance_only/metrics max |diff|: 4.440892098500626e-16

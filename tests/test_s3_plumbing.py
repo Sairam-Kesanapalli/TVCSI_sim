@@ -55,12 +55,19 @@ def test_golden_regression_bit_identical(case, seed):
         new = res.decisions[now[name]]
         assert new.dtype == old.dtype, name
         assert np.array_equal(new, old), f"{case} seed {seed}: decisions of {name} ({now[name]}) changed"
+    # Decisions (above) must be exactly equal on every computer. Metrics: equal up to floating-point
+    # rounding. The golden file was written on one computer; another numpy version / CPU can sum the
+    # same numbers in a different order, which changes the last digit (observed with the UNCHANGED
+    # pre-S3 code: <= 4.4e-16 in 9 of 138 arrays, numpy 2.4.6 vs 2.5.4; research/logs/review_S3_S7/).
+    # A real change in behaviour moves a decision or a metric by far more than 1e-12. On the computer
+    # that wrote the golden file the metrics are bit-identical.
     for name in GOLDEN_META["schemes"] + [ORACLE]:     # all schemes + the BestBeam_oracle row
         m = res.metrics[now.get(name, name)]
         assert sorted(m) == names, name
         new = np.array([m[k] for k in names], dtype=float)
         old = GOLDEN_DATA[f"{case}/{seed}/{name}/metrics"]
-        assert np.array_equal(new, old, equal_nan=True), f"{case} seed {seed}: metrics of {name} changed"
+        np.testing.assert_allclose(new, old, rtol=0, atol=1e-12, equal_nan=True,
+                                   err_msg=f"{case} seed {seed}: metrics of {name} changed")
 
 
 # ---------------------------------------------------------------- probe schemes

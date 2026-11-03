@@ -1,0 +1,12 @@
+seed 1000 Exact            now 2.855348332824  committed 2.855348332824  diff +0.0e+00  bits 17.2/17.2
+seed 1000 Proposed         now 2.805780242103  committed 2.805780242103  diff +0.0e+00  bits 256.0/256.0
+seed 1000 Proposed_risk    now 2.804830860901  committed 2.804830860901  diff +0.0e+00  bits 256.0/256.0
+seed 1000 Baseline         now 2.762736828161  committed 2.762736828161  diff +0.0e+00  bits 256.0/256.0
+seed 1000 fill_importance  now 2.725034964135  committed 2.725034964135  diff +0.0e+00  bits 256.0/256.0
+seed 1000 fill_age         now 2.711887080984  committed 2.711887080984  diff +0.0e+00  bits 256.0/256.0
+seed 1005 Exact            now 2.770776190634  committed 2.770776190634  diff +4.4e-16  bits 23.0/23.0
+seed 1005 Proposed         now 2.697765536088  committed 2.697765536088  diff +0.0e+00  bits 256.0/256.0
+seed 1005 Proposed_risk    now 2.696122208614  committed 2.696122208614  diff +0.0e+00  bits 256.0/256.0
+seed 1005 Baseline         now 2.628537818193  committed 2.628537818193  diff +0.0e+00  bits 256.0/256.0
+seed 1005 fill_importance  now 2.600335076238  committed 2.600335076238  diff +0.0e+00  bits 256.0/256.0
+seed 1005 fill_age         now 2.590015045426  committed 2.590015045426  diff +0.0e+00  bits 256.0/256.0

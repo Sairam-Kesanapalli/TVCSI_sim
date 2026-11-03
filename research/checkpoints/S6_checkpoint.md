@@ -74,6 +74,15 @@ simulator runs with both trained setups without true-channel leaks.
 2. Faculty-size choices changed where our system differs (M = B = 32, 4-bit values): P33–P34.
 3. The GRU is kept in the code (`GRUPredictor`) for the record and for low-SNR use; it is not
    used in the final configuration.
+4. **Review correction (2026-11-03): the gate was decided on the test seeds.** §3.1–3.3 are test-seed
+   diagnostics, and the two S6 choices (GRU vs persistence, trained vs dummy codec) were taken from
+   them, whereas model choices belong on the validation seeds. Repeated with the committed weights on
+   validation seeds 2000–2004 (`logs/S6/gate_on_validation.py`, `04_gate_on_validation.log`, `.json`):
+   default point persistence − GRU regret **+0.0023 ± 0.0046** (GRU better in 3/5 seeds, not
+   significant) → **gate fails, persistence kept**; GRU significantly better at 3 km/h, 60 km/h and
+   5 dB, as on test. Codec regret (32/64/128 bit) trained 0.156 / 0.077 / 0.057 vs dummy 0.192 /
+   0.083 / 0.043 → **trained codec better for the two smaller reports, as on test**. Both decisions are
+   unchanged, so no S6/S7 result changes; the test-seed numbers above remain the reported ones.
 
 ## 6. Integrity
 Faculty code untouched: committed blobs 23/23 (`logs/S6/integrity.log`).

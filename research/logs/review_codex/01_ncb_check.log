@@ -1,0 +1,19 @@
+                 curve  bg  C   Kp  Zc  G_per_cb  ours  nr_buffer  repetition  missing_parity  est_loss_db
+ critical|9600b|135prb bg1  2 5416 256     17820 16248      16680        True             432        0.028
+   normal|2400b|135prb bg2  2 2088 224     17820 10440      11048        True             608        0.035
+background|400b|135prb bg2  2 2088 224     17820 10440      11048        True             608        0.035
+  critical|9600b|45prb bg1  2 5032 240     11880 11880      15592       False               0        0.000
+  critical|9600b|67prb bg1  2 5288 256      8844  8844      16552       False               0        0.000
+  critical|9600b|33prb bg1  2 5288 256      8712  8712      16552       False               0        0.000
+  critical|9600b|22prb bg1  2 4904 224      8712  8712      14760       False               0        0.000
+  critical|9600b|16prb bg1  2 5160 240      6336  6336      15720       False               0        0.000
+    normal|2400b|67prb bg2  1 2752 288     17688 13720      14272        True             552        0.024
+ background|400b|67prb bg2  1 2112 224     17688 10520      11072        True             552        0.031
+    normal|2400b|45prb bg2  1 3000 320     11880 11880      15800       False               0        0.000
+ background|400b|45prb bg2  1 1440 144     11880  7160       7200        True              40        0.004
+    normal|2400b|33prb bg2  1 2624 288      8712  8712      14144       False               0        0.000
+ background|400b|33prb bg2  1 1056 112      8712  5240       5536        True             296        0.034
+    normal|2400b|22prb bg2  1 2560 256      5808  5808      12800       False               0        0.000
+ background|400b|22prb bg2  1  728  80      5808  3600       3928        True             328        0.053
+    normal|2400b|16prb bg2  1 2496 256      4224  4224      12736       False               0        0.000
+ background|400b|16prb bg2  1  528  72      4224  2600       3408        True             808        0.151

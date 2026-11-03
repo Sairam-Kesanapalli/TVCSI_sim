@@ -92,6 +92,11 @@ def select_mcs(cfg: dict, payload_bits: int, n_prb: int, msg_type: str) -> Plan:
             G = calculate_codeword_bits(qm, n_prb, r["pdsch_symbols"], r["dmrs_re_per_prb"])
             # Sionna's LDPC encoder stops at the mother-code rate (1/3 for BG1, 1/5 for BG2). 5G NR goes
             # lower by repeating bits of its circular buffer; Chain does the same with what is left over.
+            # Known deviation (review): NR repeats only after its whole buffer, N_cb - filler =
+            # 44 Zc + K' (BG1) / 40 Zc + K' (BG2) bits per code block, which is a little more than
+            # K'/R_mother, so these curves repeat slightly early and are slightly pessimistic
+            # (estimated <= 0.05 dB, 0.15 dB for background at 16 PRB; ASSUMPTIONS P24,
+            # research/logs/review_codex/). Sionna cannot encode past K'/R_mother.
             bg = base_graph(int(tbs), rate)
             n_cb_max = (int(int(cbs) / MOTHER_RATE[bg]) // qm) * qm
             base = min(int(G), n_cb_max * int(ncb))
@@ -105,7 +110,8 @@ class Chain:
     Code rates below the mother-code rate (1/3 for BG1, 1/5 for BG2): the TB is encoded to
     base_coded_bits (the mother-code rate per code block, Sionna's lower limit), and the G - base
     remaining coded bits repeat those bits cyclically, as 5G NR rate matching repeats its circular
-    buffer. The receiver adds the LLRs of all copies of a bit before decoding. Repetition only occurs
+    buffer (NR starts repeating slightly later, after N_cb - filler bits; see select_mcs and
+    ASSUMPTIONS P24). The receiver adds the LLRs of all copies of a bit before decoding. Repetition only occurs
     at QPSK rates here, and QPSK over AWGN acts on every bit independently, so the order (and
     scrambling) of the copies does not change the result. The base graph Sionna picks is checked
     against TS 38.212 7.2.2.

@@ -1,0 +1,19 @@
+Review of S3-S7: portable golden test, Windows-safe faculty check, S6 gate on validation seeds
+
+Review of Maruthi's S3-S7 (PR #3) on a second computer: faculty code untouched, no
+train/test leakage in S4/S5, S3 decisions bit-identical, S4 estimator rebuilds identically,
+S7 final numbers reproduce (research/logs/review_S3_S7/REVIEW.md). No result changes.
+
+- tests/test_s3_plumbing.py: decisions still compared exactly; metrics with atol 1e-12.
+  The golden file failed on other computers by <= 4.4e-16 (numpy 2.4.6 vs 2.5.4), and the
+  unchanged pre-S3 code shows the same differences there.
+- research/tools/verify_faculty.py: checks the committed files (git HEAD) and the working
+  tree with CRLF->LF normalisation; no more false alarms on Windows checkouts.
+- S6: the GRU/persistence gate and the codec choice were read off test seeds; repeated on
+  validation seeds 2000-2004 with the same outcome (research/logs/S6/gate_on_validation.*,
+  04_gate_on_validation.log). Recorded in S6_checkpoint.md section 5 and the S7 report.
+- S7 report wording on importance weighting; test counts in README / HANDOFF / report.
+
+Tests: 71 passed (sionna installed). Faculty check: committed 23/23, working tree 23/23.
+
+Co-authored-by: Durgesh Janapareddy <durgeshjanapareddy9@gmail.com>

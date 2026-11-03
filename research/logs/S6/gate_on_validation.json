@@ -1,0 +1,96 @@
+{
+ "seeds": [
+  2000,
+  2001,
+  2002,
+  2003,
+  2004
+ ],
+ "gru_passes_gate": false,
+ "diagnostics": {
+  "codec": {
+   "trained": {
+    "regret_per_mode": [
+     0.1558,
+     0.0774,
+     0.057
+    ],
+    "acc_per_mode": [
+     0.6996,
+     0.7891,
+     0.8183
+    ]
+   },
+   "dummy": {
+    "regret_per_mode": [
+     0.1924,
+     0.0827,
+     0.0434
+    ],
+    "acc_per_mode": [
+     0.6302,
+     0.7725,
+     0.8443
+    ]
+   }
+  },
+  "predictor": {
+   "default": {
+    "gru_regret": 0.29056638181209565,
+    "gru_acc": 0.5079,
+    "persistence_regret": 0.29282504320144653,
+    "persistence_acc": 0.5096,
+    "regret_gain_mean_ci95": [
+     0.0022586613893508913,
+     0.004564600968409694
+    ],
+    "seeds_gru_better": 3,
+    "conf_brier": 0.2292232282185845,
+    "conf_mean": 0.5644002030897262,
+    "good_rate": 0.5398
+   },
+   "speed3": {
+    "gru_regret": 0.0968528926372528,
+    "gru_acc": 0.7636000000000001,
+    "persistence_regret": 0.10352281481027603,
+    "persistence_acc": 0.7609,
+    "regret_gain_mean_ci95": [
+     0.006669922173023224,
+     0.005353065096708717
+    ],
+    "seeds_gru_better": 5,
+    "conf_brier": 0.15243234133439615,
+    "conf_mean": 0.865765812673412,
+    "good_rate": 0.7991999999999999
+   },
+   "speed60": {
+    "gru_regret": 0.41966241002082827,
+    "gru_acc": 0.3709,
+    "persistence_regret": 0.43939533829689026,
+    "persistence_acc": 0.3519,
+    "regret_gain_mean_ci95": [
+     0.01973292827606201,
+     0.010543552761632168
+    ],
+    "seeds_gru_better": 5,
+    "conf_brier": 0.23000023187368565,
+    "conf_mean": 0.41370641288172677,
+    "good_rate": 0.39590000000000003
+   },
+   "snr5": {
+    "gru_regret": 0.47666230201721194,
+    "gru_acc": 0.3597,
+    "persistence_regret": 0.5529535114765167,
+    "persistence_acc": 0.3073,
+    "regret_gain_mean_ci95": [
+     0.07629120945930482,
+     0.0204633467954389
+    ],
+    "seeds_gru_better": 5,
+    "conf_brier": 0.212435691900337,
+    "conf_mean": 0.4187237445226084,
+    "good_rate": 0.38360000000000005
+   }
+  }
+ }
+}
