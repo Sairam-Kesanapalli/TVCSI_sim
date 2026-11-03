@@ -22,8 +22,8 @@ The Phase 1 + Phase 2 baseline of the side track is commit `d639eff`. The facult
 | Stage | Goal | Status |
 |---|---|---|
 | S0 | backups, directory set-up, environments, verification | **done** (`checkpoints/S0_checkpoint.md`) |
-| S1 | run the faculty implementation completely (both configurations: sigmoid surrogate and measured digits task), unmodified | next |
-| S2 | analyse and document the faculty results | — |
+| S1 | run the faculty implementation completely (both configurations: sigmoid surrogate and measured digits task), unmodified | **done** (`checkpoints/S1_checkpoint.md`; results in `faculty_TaskVoCSI_v2/results/`) |
+| S2 | analyse and document the faculty results | next |
 | S3 | side track: plumbing 3A (expose gNB-side state to schemes; decisions bit-identical) | — |
 | S4 | side track: learned per-mode quality estimator (frozen approach), validated | — |
 | S5 | side track: risk (outage) prediction + five baselines (periodic, age, uncertainty, importance, channel) | — |

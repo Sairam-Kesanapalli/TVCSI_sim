@@ -1,0 +1,64 @@
+{
+  "quick": false,
+  "seconds": 783.5544738000008,
+  "nn_training": {
+    "codec_loss": 0.2269626177019543,
+    "predictor_loss": 0.12080184017357073,
+    "n_codec": 6720,
+    "n_predictor": 19440
+  },
+  "measured_task": {
+    "clean_accuracy": [
+      0.8962962962962963,
+      0.95,
+      0.9574074074074074
+    ],
+    "digits_train": 1257,
+    "digits_test": 540,
+    "snr_grid_db": [
+      -12.0,
+      -10.0,
+      -8.0,
+      -6.0,
+      -4.0,
+      -2.0,
+      0.0,
+      2.0,
+      4.0,
+      6.0,
+      8.0,
+      10.0,
+      12.0,
+      14.0,
+      16.0,
+      18.0,
+      20.0,
+      22.0,
+      24.0
+    ],
+    "feature_bits": [
+      40,
+      80,
+      160
+    ],
+    "channel": "uncoded coherent BPSK over AWGN with independent bit flips"
+  },
+  "calibration_validation": {
+    "val_q_mae": 0.11733605575203208,
+    "val_q_rmse": 0.261360332448282,
+    "val_outage_brier": 0.0749475590186048,
+    "val_n": 6720,
+    "per_mode_mae": [
+      0.16454985753250037,
+      0.17519681520299815,
+      0.07561663083508607,
+      0.05398091943754374
+    ],
+    "per_mode_gain_corr": [
+      0.21437034374147243,
+      0.20668032487221757,
+      0.2396507501258712
+    ]
+  },
+  "warning": "Synthetic channels; quality is a measured digit classification lookup only with --measured-task, otherwise a sigmoid surrogate. Fixed-power orthogonal-RB restricted system; full original P1 not implemented."
+}

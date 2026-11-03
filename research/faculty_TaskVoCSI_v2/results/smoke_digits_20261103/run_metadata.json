@@ -1,0 +1,64 @@
+{
+  "quick": true,
+  "seconds": 91.31892679999874,
+  "nn_training": {
+    "codec_loss": 0.6337374250094095,
+    "predictor_loss": 0.35003118051422966,
+    "n_codec": 768,
+    "n_predictor": 2064
+  },
+  "measured_task": {
+    "clean_accuracy": [
+      0.8962962962962963,
+      0.95,
+      0.9574074074074074
+    ],
+    "digits_train": 1257,
+    "digits_test": 540,
+    "snr_grid_db": [
+      -12.0,
+      -10.0,
+      -8.0,
+      -6.0,
+      -4.0,
+      -2.0,
+      0.0,
+      2.0,
+      4.0,
+      6.0,
+      8.0,
+      10.0,
+      12.0,
+      14.0,
+      16.0,
+      18.0,
+      20.0,
+      22.0,
+      24.0
+    ],
+    "feature_bits": [
+      40,
+      80,
+      160
+    ],
+    "channel": "uncoded coherent BPSK over AWGN with independent bit flips"
+  },
+  "calibration_validation": {
+    "val_q_mae": 0.4904293167404891,
+    "val_q_rmse": 0.5494141658524607,
+    "val_outage_brier": 0.3206421587220478,
+    "val_n": 1152,
+    "per_mode_mae": [
+      0.4851480805607635,
+      0.4921897288003976,
+      0.4921897288003976,
+      0.4921897288003976
+    ],
+    "per_mode_gain_corr": [
+      -0.0027388162822345663,
+      -0.0027388162822345663,
+      -0.0027388162822345663
+    ]
+  },
+  "warning": "Synthetic channels; quality is a measured digit classification lookup only with --measured-task, otherwise a sigmoid surrogate. Fixed-power orthogonal-RB restricted system; full original P1 not implemented."
+}

@@ -1,0 +1,18 @@
+Step 1: train real quantized progressive CSI codec and causal beam GRU
+Step 2: fit offline task-quality and outage predictors without test access
+Validation: {'val_q_mae': 0.16408125420266595, 'val_q_rmse': 0.2893035813972707, 'val_outage_brier': 0.09571209683100398, 'val_n': 6720, 'per_mode_mae': [0.2275749851986269, 0.21077130824579166, 0.11789762267771918, 0.10008110068852605], 'per_mode_gain_corr': [0.23942485422904866, 0.24406290771502823, 0.27057254885509163]}
+Step 3: run paired held-out closed-loop tests
+       scheme  utility  utility_ci95     bits  outage  ideal_outage
+      CTVC-DP   3.5257        0.0753 143.0585  0.4442        0.0002
+  CTVC-greedy   3.5297        0.0741 142.5785  0.4506        0.0002
+no-importance   2.8828        0.0703 142.4123  0.4821        0.0002
+      no-risk   3.5192        0.0749 142.9754  0.4427        0.0002
+     periodic   3.3005        0.0799 144.0000  0.4665        0.0002
+          age   3.3545        0.0782 144.0000  0.4617        0.0002
+  uncertainty   3.2600        0.0871 144.0000  0.4650        0.0002
+   importance   3.3925        0.0832 144.0000  0.4631        0.0002
+      channel   3.2961        0.0860 144.0000  0.4675        0.0002
+   prediction   2.0458        0.2443   0.0000  0.6158        0.0002
+        genie   3.8861        0.0465  43.9938  0.3713        0.0002
+Step 4: run sensitivity/distribution-shift sweeps (models frozen)
+Saved: results\full_surrogate_20261103 Elapsed seconds: 826.2

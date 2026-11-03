@@ -1,0 +1,20 @@
+Step 1: train real quantized progressive CSI codec and causal beam GRU
+Step 2: fit offline task-quality and outage predictors without test access
+Validation: {'val_q_mae': 0.49108901167506935, 'val_q_rmse': 0.554743175013118, 'val_outage_brier': 0.34559806775480617, 'val_n': 1152, 'per_mode_mae': [0.48285590276084034, 0.4938333813131457, 0.4938333813131457, 0.4938333813131457], 'per_mode_gain_corr': [0.015164056325981126, 0.015164056325981126, 0.015164056325981126]}
+Step 3: run paired held-out closed-loop tests
+       scheme  utility  utility_ci95     bits  outage  ideal_outage
+      CTVC-DP   1.9381        5.7432   4.7442  0.9302           0.0
+  CTVC-greedy   1.9381        5.7432   4.7442  0.9302           0.0
+no-importance   1.6089        1.1457   4.4651  0.8256           0.0
+      no-risk   2.0297        6.7086   5.0233  0.8953           0.0
+     periodic   2.1942        3.9013 144.0000  0.7384           0.0
+          age   2.2172        3.6832 144.0000  0.7267           0.0
+  uncertainty   1.4392        3.0302 144.0000  0.7209           0.0
+   importance   2.0927        3.8573 144.0000  0.7384           0.0
+      channel   1.9470        2.6042 144.0000  0.7267           0.0
+   prediction   1.1723        5.2701   0.0000  0.9012           0.0
+        genie   2.8192        1.4627   1.6744  0.5988           0.0
+Step 4: run sensitivity/distribution-shift sweeps (models frozen)
+Saved: results\smoke_surrogate_20261103 Elapsed seconds: 28.1
+
+EXIT_CODE=0 ELAPSED_SECONDS=32.4

@@ -1,0 +1,17 @@
+S1: run the faculty TaskVoCSI_v2 implementation, unmodified
+
+Smoke and full runs of both configurations (sigmoid surrogate and measured digits task)
+with the faculty code exactly as provided (23 files byte-identical to the S0 manifest).
+
+- research/faculty_TaskVoCSI_v2/results/: smoke_* (pipeline checks only) and full_*
+  (training, 20 held-out test seeds, paired Holm comparisons, sweeps, plots, trained
+  networks.pt and calibrator.joblib for resume.py).
+- research/logs/S1/: environment, run logs, launch record, close-out integrity checks.
+- research/checkpoints/S1_checkpoint.md: results, reproducibility vs the faculty notes,
+  observations for S2, integrity evidence.
+- research/README.md: stage status updated.
+
+Full runs, 20 seeds: CTVC-DP 3.60 (digits) / 3.53 (surrogate) vs best baseline 3.54 / 3.39;
+significant against all five baselines after Holm correction in both configurations.
+
+Co-authored-by: Durgesh Janapareddy <durgeshjanapareddy9@gmail.com>

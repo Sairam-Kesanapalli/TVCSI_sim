@@ -1,0 +1,39 @@
+{
+  "test_seeds": [
+    301,
+    302,
+    303,
+    304,
+    305,
+    306,
+    307,
+    308,
+    309,
+    310,
+    311,
+    312,
+    313,
+    314,
+    315,
+    316,
+    317,
+    318,
+    319,
+    320
+  ],
+  "schemes": [
+    "CTVC-DP",
+    "CTVC-greedy",
+    "no-importance",
+    "no-risk",
+    "periodic",
+    "age",
+    "uncertainty",
+    "importance",
+    "channel",
+    "prediction",
+    "genie"
+  ],
+  "independent_replicates": 20,
+  "confidence_interval_unit": "seed"
+}
