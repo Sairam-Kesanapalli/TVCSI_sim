@@ -3,6 +3,9 @@
 This folder makes the staged research work portable: anyone who checks out this branch can
 continue from the latest checkpoint on their own computer.
 
+**New here (person or AI agent)? Start with [`HANDOFF.md`](HANDOFF.md)**: project context,
+where everything is, rules, and the detailed spec of the next stage.
+
 ## What lives where
 
 | Path | What it is | Rule |
@@ -13,6 +16,7 @@ continue from the latest checkpoint on their own computer.
 | `research/logs/S<n>/` | console logs and evidence of each stage | append only |
 | `research/manifests/` | SHA-256 of every original file (TVCSI_sim at Phase 2, faculty code) | used to prove the originals are untouched |
 | `research/tools/make_manifest.py` | `write` / `verify <root> <manifest.csv>` | — |
+| `research/tools/verify_faculty.py` | one-command check that the faculty code is untouched | run at every checkpoint |
 
 The Phase 1 + Phase 2 baseline of the side track is commit `d639eff`. The faculty code in
 `research/faculty_TaskVoCSI_v2/` is byte-identical to `research/manifests/TaskVoCSI_faculty_original.csv`.

@@ -1,0 +1,13 @@
+research: HANDOFF guide for collaborators, faculty integrity check tool
+
+- research/HANDOFF.md: entry point for collaborators and their AI agents: project
+  context, map of the repository and earlier work, reading order, rules, set-up,
+  the detailed S3 design and test gate, guides for S4-S7, checkpoint template and
+  a ready-to-use agent prompt.
+- research/tools/verify_faculty.py: one-command check that the faculty code is
+  byte-identical to the S0 manifest (currently 23/23 match).
+- research/README.md: points to HANDOFF.md and the new tool.
+
+No simulator code or faculty file changed.
+
+Co-authored-by: Durgesh Janapareddy <durgeshjanapareddy9@gmail.com>
