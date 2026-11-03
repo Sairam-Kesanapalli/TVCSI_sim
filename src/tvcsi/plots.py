@@ -86,9 +86,9 @@ def footnote(fig, text: str) -> None:
 
 
 def save(fig, out_dir: Path, name: str, dpi: int) -> None:
+    """Write the figure as PNG only (the repository keeps no PDF copies of figures)."""
     out_dir.mkdir(parents=True, exist_ok=True)
     fig.savefig(out_dir / f"{name}.png", dpi=dpi, bbox_inches="tight")
-    fig.savefig(out_dir / f"{name}.pdf", bbox_inches="tight")
     plt.close(fig)
 
 

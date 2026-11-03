@@ -73,8 +73,8 @@ git checkout research/stages-s0-s7
 5. **`ASSUMPTIONS.md`** — every modelling choice and parameter value (what / why / how / where);
    Phase 1 and Phase 2 sections plus numbered items 37–52 and the parameter list P1, P2, … under
    "Parameter values: what, why, how, where".
-6. **`docs/next_steps_plan.pdf`** — the beginner-friendly plan written after the faculty review
-   (Phases 1–5; S3–S6 implement its Phases 3–5).
+6. **`deprecated/docs/next_steps_plan.pdf`** — the beginner-friendly plan written after the faculty
+   review (Phases 1–5; S3–S6 implement its Phases 3–5; superseded, kept for the record).
 7. **`docs/5G_group_5.pdf`** — the original project specification (equation numbers such as
    Eq. 39 in the code refer to it).
 
@@ -95,8 +95,9 @@ git checkout research/stages-s0-s7
 | `data/q_curves.csv` (+ `_meta.json`, `q_validation.csv`, `carrier_selection.csv`) | Phase 2 measured quality curves (18 curves, Sionna 5G NR PDSCH, validated) |
 | `scripts/measure_q.py` | re-measures the curves (needs GPU + torch + sionna; ~hours; normally **not** needed) |
 | `scripts/` (others) | table fitting, summary, sensitivity, dataset export, `run_all.sh` |
-| `tests/` | pytest suite: **70 passed, 1 skipped** after S7 (71 passed if sionna is installed; 39 passed + 1 xfailed before S4) |
-| `results/`, `figures/` | Phase 2 side-track results (default point and sweeps) |
+| `tests/` | pytest suite: **73 passed, 1 skipped** (74 passed if sionna is installed; 39 passed + 1 xfailed before S4) |
+| `results/final_20261103/`, `figures/final_20261103/` | **final** side-track results (S7) and figures (PNG); `figures/before_after/`: Phase 2 vs final |
+| `deprecated/` | superseded files (Phase 2 results and figures, old plan, old estimator reports); see `deprecated/README.md` |
 | `research/faculty_TaskVoCSI_v2/` | **faculty code, unmodified** + its run results in `results/{smoke,full}_{surrogate,digits}_20261103/` (incl. trained `networks.pt`, `calibrator.joblib`) |
 | `research/S2_analysis/` | S2 analysis script, tables T1–T7, figures F1–F6 |
 | `research/checkpoints/` | one checkpoint per finished stage |
@@ -115,7 +116,8 @@ repository clone is all you need.
 | Baseline (periodic, 64-bit mode) | 2.726 | 256 | strong simple baseline |
 | Proposed / Optimised (plug-in estimator) | 1.250 | **0** | estimator sees no value in feedback → never requests it (the S4 problem) |
 
-Full table: `results/summary.md`.
+Full table: `deprecated/phase2_results/results/summary.md` (these are the Phase 2 numbers; final numbers in
+`results/final_20261103/summary.md` and the main `README.md`).
 
 Critical-user slots that are physically infeasible (even the true best beam misses Q_min): 16.2 %
 (was 95.7 % with the old logistic Q). Faculty main track (20 seeds): CTVC-DP beats all five
@@ -155,7 +157,7 @@ Python 3.11+ (3.13 used). Keep virtual environments **outside** the repository.
 ```bash
 python -m venv ../venvs/tvcsi_combined
 ../venvs/tvcsi_combined/Scripts/python -m pip install -e . pytest scikit-learn joblib   # Linux/macOS: bin/python
-../venvs/tvcsi_combined/Scripts/python -m pytest -q          # expect: 70 passed, 1 skipped (first run fits the estimator, ~2-5 min)
+../venvs/tvcsi_combined/Scripts/python -m pytest -q          # expect: 73 passed, 1 skipped (first run fits the estimator, ~2-5 min)
 ```
 
 torch is needed only for S6 (training) or re-measuring Q (`pip install -e .[linklevel]`).

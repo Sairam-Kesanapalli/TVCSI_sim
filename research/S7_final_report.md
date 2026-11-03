@@ -128,7 +128,7 @@ against 18–20 % in the faculty runs (S2 §5).
 ```bash
 python -m venv ../venvs/tvcsi_combined          # outside the repository and outside OneDrive
 ../venvs/tvcsi_combined/Scripts/python -m pip install -e . pytest scikit-learn joblib
-../venvs/tvcsi_combined/Scripts/python -m pytest -q                       # 70 passed, 1 skipped (71 passed if sionna is installed)
+../venvs/tvcsi_combined/Scripts/python -m pytest -q                       # 73 passed, 1 skipped (74 passed if sionna is installed)
 python scripts/fit_estimator.py                                           # S4 estimator (default config)
 python scripts/train_models.py                                            # S6, needs torch (CPU); weights are committed
 python research/logs/S7/make_final_config.py                              # configs/final.yaml

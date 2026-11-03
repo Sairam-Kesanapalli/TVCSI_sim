@@ -7,3 +7,6 @@ data/q_curves_parts/
 
 # S4: frozen learned estimator (rebuilt deterministically by scripts/fit_estimator.py)
 results/estimators/*.joblib
+
+# quick pipeline checks (python -m tvcsi.sweep --quick)
+results/quick/

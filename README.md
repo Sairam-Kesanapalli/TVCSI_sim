@@ -1,206 +1,254 @@
-# TVCSI simulator — Task-Value-Aware CSI Feedback
+# TVCSI_sim: task-value-aware CSI feedback for a 5G NR massive-MIMO downlink
 
-A pure-software simulator and evaluation harness for task-value-aware CSI feedback in an FDD
-massive-MIMO downlink. In every slot the gNB chooses a CSI-feedback mode per user: m = 0 means
-no feedback (the beam is predicted from history), and m = 1, 2, 3 means a semantic CSI code of
-8/16/32 values at 4 bits (32/64/128 bits). The total feedback per slot is capped at C_FB_max,
-and the scheduler maximises the task utility U_k = v_k Q(gamma_k). The task quality Q is
-measured, not assumed: Q = 1 - BLER of the user's semantic message over a 5G NR downlink data
-channel, from a link-level simulation (see "Task quality" below). Notation and equation
-numbers follow the formulation document (`docs/5G_group_5.pdf`). Every function that implements an
-equation names it in its docstring.
+In every time slot the base station (gNB) decides **which users send channel-state feedback, and
+how much**: no feedback (the beam is predicted from history), or a compressed report of
+32 / 64 / 128 bits. The total feedback per slot is limited (256 bits for 8 users), so the scheduler
+should spend it where it matters most: on users whose beam is likely out of date **and** whose
+message is valuable. Value = importance v_k × task quality Q, where Q is the probability that the
+user's message is delivered over a **measured 5G NR link** (Q = 1 − BLER).
 
-> **Current status: dummy models.** The encoder/decoder and the beam predictor are placeholders
-> (log-normal decoding noise, persistence prediction). Every figure is stamped
-> "DUMMY MODELS". The numbers exercise the pipeline and the schedulers; they are not research
-> results about learned CSI feedback.
+Equation numbers in the code refer to the project specification `docs/5G_group_5.pdf`.
+
+**Status (Nov 2026): all stages done.** The faculty review of the first version (Proposed lost to
+simple baselines, 97–98 % critical violations, placeholder models, made-up quality curve) has been
+addressed in Phases 1–2 and stages S0–S7. Final report: [`research/S7_final_report.md`](research/S7_final_report.md).
+
+---
+
+## Results at a glance
+
+Two independent tracks were run (details in [`research/HANDOFF.md`](research/HANDOFF.md)):
+
+* **Side track: this simulator** (our TVCSI_sim + selected faculty components). **All results
+  below are from this track.**
+* **Main track: the faculty's TaskVoCSI_v2**, run unmodified (`research/faculty_TaskVoCSI_v2/`).
+  Their method beats their five baselines by +1.5 % (digits task) and +3.9 % (sigmoid quality),
+  significant on 20 seeds ([`research/S2_faculty_results.md`](research/S2_faculty_results.md)).
+  It is a different simulator, so its numbers are not directly comparable with ours.
+
+### Headline (side track, final run, 10 held-out test seeds)
+
+1. **The original failure is fixed.** The old estimator never asked for feedback (utility 1.25,
+   last place). The learned estimator (S4) lifts Proposed to **2.774**, first among all
+   implementable schemes, close to the genie (2.833).
+2. **It beats every simple baseline**, the periodic one and the five faculty baselines: at **28 of
+   29** sweep points it is significantly better than the *best* baseline at that point (seed-paired,
+   Holm-corrected; the 29th point, unlimited feedback, is a tie).
+3. **Biggest gains where feedback matters most:** low SNR (+8.8 %), scarce feedback (+4.6 % at 5 %
+   budget), fast users (+4.1 % at 60 km/h). At the default point the gain is modest (+1.7 % over
+   periodic), because periodic feedback is already near the genie there.
+4. **Far fewer feedback bits.** To reach 90 % of the full-feedback utility, Proposed needs a budget
+   of 0.05–0.08 (the smallest budget tested, for speeds ≤ 30 km/h), periodic needs 0.17–0.20: at
+   least **2.4–3.4× fewer bits**.
+5. **Critical users are protected better.** Of the critical-user slots where success is physically
+   possible, Proposed fails 5.4 % (target ≤ 10 %), periodic 10.5 %. Every critical user meets the
+   10 % target in 10/10 seeds with Proposed, 1/10 with periodic. (16.2 % of critical slots cannot
+   succeed even with the perfect beam; no scheme can fix those.)
+
+### Default point (K = 8 users, 30 km/h, 15 dB, 256 bits/slot)
+
+| Scheme | What it is | Utility | Bits/slot | Critical failures (feasible slots) |
+|---|---|---|---|---|
+| Exact | genie: knows the true outcome of every option (not implementable) | 2.833 | 20 | 1.1 % |
+| full_feedback | everyone sends the largest report (4× over budget, reference) | 2.798 | 1024 | 4.0 % |
+| **Proposed** | **greedy scheduler on the learned value estimate** | **2.774** | 256 | **5.4 %** |
+| Proposed_risk | Proposed + virtual queue for critical users (S5) | 2.773 | 256 | 5.2 % |
+| Baseline | periodic round robin, 64-bit reports | 2.729 | 256 | 10.5 % |
+| fill_importance / fill_age / fill_periodic | faculty baselines (S5) | 2.684 / 2.674 / 2.622 | 256 | 19.4 / 15.8 / 20.7 % |
+| Proposed_plugin | the old estimator (before S4) | 1.250 | 0 | 72.1 % |
+
+Higher utility is better (maximum ≈ 2.84 = perfect beams for everyone). Full table with confidence
+intervals: [`results/final_20261103/summary.md`](results/final_20261103/summary.md).
+
+### Before → after (same simulator, same test seeds)
+
+Utility vs feedback budget. Left: Phase 2 (old estimator); right: final. *Note: y-axis ranges differ.*
+
+![before/after: utility vs budget](figures/before_after/fig01_utility_vs_budget_before_after.png)
+
+Critical-user failures vs budget (right panel of each half = only slots where success is possible;
+red dashed line = 10 % target):
+
+![before/after: critical violations](figures/before_after/fig12_violation_vs_budget_before_after.png)
+
+### Proposed vs all simple baselines
+
+![Proposed vs eight baselines](figures/final_20261103/base01_utility_vs_budget.png)
+
+### Feedback needed for 90 % of full-feedback utility
+
+![bits to target](figures/final_20261103/fig10_bits_to_target_vs_speed.png)
+
+### Where to find every result
+
+| What | Where |
+|---|---|
+| Final numbers (all schemes, all sweeps) | `results/final_20261103/` (`summary.md`, `sweep_*.csv`, `default_runs.csv`, `sensitivity.md`) |
+| Final figures (PNG) | `figures/final_20261103/` (list below) |
+| Before / after comparisons | `figures/before_after/` (8 figures; rebuilt by `research/tools/make_before_after.py`) |
+| Measured 5G quality curves | `data/q_curves.csv`, `figures/q_curves_validation.png`, `figures/calib_q.png` |
+| Faculty track (main track) results | `research/faculty_TaskVoCSI_v2/results/`, analysis in `research/S2_analysis/` |
+| Superseded Phase 2 results | `deprecated/phase2_results/` |
+
+### Limitations (stated plainly)
+
+Synthetic channels (which is likely why a trained beam predictor does not beat "reuse the last
+beam"); only the feedback part of the optimisation problem is solved (every user is served);
+reliability is not guaranteed at very small budgets (5–10 %); one training run per model. Details:
+[`research/S7_final_report.md`](research/S7_final_report.md) §5.
+
+---
 
 ## Quick start
 
-```bash
-python3 -m venv .venv
-.venv/bin/pip install -e . pytest
-bash scripts/run_all.sh          # tests, calibration, table, sweeps, figures, summary, dataset
-```
-
-`run_all.sh` took 12 minutes on a 16-thread CPU (about 140 CPU-minutes, so expect about 20 minutes on 8 threads). The sweep runs seeds in parallel
-(`sim.n_jobs`, 0 = all cores). Individual steps:
-
-| command | output |
-|---|---|
-| `python -m pytest -q` | the 10 spec tests plus unit tests |
-| `python scripts/calibrate_q.py` | `figures/calib_q.png`: measured vs legacy Q curves, best-beam SINR spread |
-| `python scripts/fit_tvcsi_table.py` | `results/tvcsi_table.json` (validation seeds) |
-| `python -m tvcsi.sweep [--quick]` | `results/sweep_*.csv`, `default_runs.csv`, `default_loss_traces.npz`, `runtime.csv`, `tables/` |
-| `python -m tvcsi.plots` | `figures/fig01..fig14`, `figures/supp01..supp05` (PNG 200 dpi + PDF) |
-| `python scripts/make_summary.py` | `results/summary.md`, `results/ordering_gaps.csv` |
-| `python scripts/export_dataset.py` | `results/dataset/{train,val,test}.npz` + `meta.json` |
-
-`--quick` (T = 300, 2 seeds, written to `results/quick/`) only checks that the pipeline runs.
-
-`run_all.sh` does not re-measure the task-quality curves: they are input data, committed in
-`data/q_curves.csv`. Re-measuring needs PyTorch and Sionna (`pip install -e .[linklevel]`, with
-torch from the CPU index) and is described under "Task quality".
-
-All parameters are in `configs/default.yaml`; nothing numeric is hard-coded in `src/`.
-`ASSUMPTIONS.md` lists every interpretation, deviation and tuned constant.
-
-## Layout
-
-```
-configs/default.yaml   every parameter
-src/tvcsi/
-  config.py            YAML loading, overrides, derived C_m, C_FB_max, rho
-  channel.py           time-correlated ULA multipath channel, pilot estimate, DeepMIMO stub
-  codebook.py          DFT codebook, beam gains g_kb = |h^H w_b|^2 (Eq. 3-4)
-  link.py              beam selection (14), regret (15), SINR, legacy logistic Q (20), utility (21)
-  quality.py           task-quality models: measured Q = 1 - BLER (default) or legacy logistic
-  importance.py        message types and Markov importance v_k(t)
-  models/              Encoder/Decoder/BeamPredictor interfaces, dummy implementations, factory
-  tvcsi.py             regret lookup table, expected utility Uhat, TVCSI (Eq. 32)
-  solvers.py           brute force, exact DP (multiple-choice knapsack), greedy TVCSI
-  schemes.py           every scheduling scheme behind one decide() interface
-  metrics.py           L_sem (36), CVaR (37), switching (38), t-intervals
-  sim.py               slot loop, table fitting
-  sweep.py             sweeps, default run, runtime benchmark (parallel)
-  plots.py             all figures
-scripts/               measure_q (link-level Q curves), calibrate_q, fit_tvcsi_table, make_summary,
-                       sensitivity, export_dataset, run_all.sh
-data/                  q_curves.csv (+ _meta.json), carrier_selection.csv: measured input data
-tests/                 pytest suite
-results/  figures/     outputs
-```
-
-## Task quality (Phase 2)
-
-Q is the 3GPP-style *PHY abstraction* used by system-level simulators: the probability that the
-user's semantic message is delivered intact in the slot, Q_type(gamma) = 1 - BLER_type(gamma).
-`scripts/measure_q.py` measures BLER with Sionna's standard-compliant 5G NR chain (TB CRC, code-block
-segmentation, LDPC, rate matching, scrambling, QAM, AWGN, APP demapper, BP decoder) for each
-message type's payload over the user's PRBs, with the lowest PDSCH MCS whose transport block holds
-the payload. Every parameter, its value, reason and source is in ASSUMPTIONS.md (Phase 2).
+Python 3.11+. Keep the virtual environment outside the repository.
 
 ```bash
-python scripts/measure_q.py select   # carrier choice (rule in ASSUMPTIONS.md) -> data/carrier_selection.csv
-python scripts/measure_q.py curves   # every curve the sweeps need -> data/q_curves.csv
+python -m venv ../venvs/tvcsi
+../venvs/tvcsi/Scripts/python -m pip install -e . pytest      # Linux/macOS: ../venvs/tvcsi/bin/python
+../venvs/tvcsi/Scripts/python -m pytest -q                    # 73 passed, 1 skipped (74 with sionna)
 ```
 
-`quality.model: logistic` restores the original logistic Q (bit-identical to the old code).
+The first test run fits the learned estimator (2–5 min, deterministic, cached in `results/estimators/`).
 
-## What happens in a slot (spec 4)
+**Reproduce the final results** (about 40 min on 8 cores; writes to new folders if you change
+`paths` in the config, see `research/logs/review_S3_S7/REVIEW.md`):
 
-For each slot t, and for every scheme on the same channel and importance realisation:
+```bash
+python -m tvcsi.sweep --config configs/final.yaml
+python -m tvcsi.plots --config configs/final.yaml
+python scripts/make_summary.py --config configs/final.yaml
+python scripts/sensitivity.py --config configs/final.yaml
+```
 
-1. Channel step; true gains g_k(t); pilot estimate hhat = h + CN(0, M / snr_pilot).
-2. Importance v_k(t).
-3. Shared feedback outcomes for modes 1-3: encode hhat, decode to ghat^m, then beam, regret,
-   SINR, Q and true utility. These depend only on the channel, so all schemes share them.
-4. Per scheme: the predictor gives (ghat^0, confidence) from that scheme's own history; the
-   mode-0 outcome follows.
-5. Estimated utilities Uhat[k][m] from predictor output, importance and the regret table only.
-6. The scheme picks modes. A hard assert enforces sum_k C_{x_k} <= C_FB_max (only
-   `full_feedback` is exempt).
-7. The chosen outcome is realised and logged.
-8. The predictor history receives what the gNB actually holds: decoded gains if m > 0, its own
-   prediction if m = 0. True gains never enter any history.
+Quick checks: `python research/logs/review_S3_S7/reproduce_final.py` re-simulates two test seeds and
+compares them with the committed numbers; `python research/tools/verify_faculty.py` proves the
+faculty code is untouched.
 
-A test (spec test 10) replaces the true channel with garbage after step 3. The decisions of
-every non-genie scheme stay bit-identical.
+Optional extras: `pip install -e .[linklevel]` (torch + Sionna) only to re-measure the quality curves
+(`scripts/measure_q.py`, GPU recommended) or re-train the S6 models (`scripts/train_models.py`).
+
+## Repository structure
+
+```
+README.md, ASSUMPTIONS.md      overview; every modelling choice and parameter (what / why / how / where)
+pyproject.toml                 package `tvcsi` and its dependencies
+configs/
+  default.yaml                 every parameter (placeholder models; used by the tests)
+  final.yaml                   default + trained models + output folders of the final run (generated)
+src/tvcsi/                     the simulator
+  sim.py                       slot loop, best-beam oracle, constraint metrics
+  schemes.py                   all scheduling schemes (DecisionInputs = what a scheduler may see)
+  estimator.py                 S4 learned per-mode quality estimator (ExtraTrees)
+  tvcsi.py                     old mean-regret plug-in estimator (kept as the *_plugin ablation)
+  solvers.py                   exact DP (multiple-choice knapsack), greedy, brute force
+  quality.py, link.py          measured Q = 1 - BLER (Phase 2), beams, regret, SINR, utility
+  channel.py, codebook.py,     channel model, DFT beams, message types and importance, config
+  importance.py, config.py
+  models/                      interfaces, placeholder models, trained codec + GRU (numpy inference)
+  stats.py, metrics.py         paired Holm statistics, CVaR, switching, ...
+  sweep.py, plots.py           parameter sweeps (parallel) and all figures
+scripts/                       measure_q (5G link-level curves), fit_estimator, train_models (S6),
+                               fit_tvcsi_table, make_summary, sensitivity, calibrate_q, export_dataset
+data/                          measured quality curves, carrier choice, trained model weights
+tests/                         pytest suite
+results/
+  final_20261103/              FINAL results (CSV + summary.md)
+  estimators/                  learned-estimator cache reports (the .joblib files are rebuilt)
+  tvcsi_table.json             plug-in regret table (used by the *_plugin ablations and tests)
+figures/
+  final_20261103/              FINAL figures (PNG)
+  before_after/                Phase 2 vs final, side by side
+  calib_q.png, q_curves_validation.png   quality-curve figures (Phase 2, still current)
+research/                      staged research work S0-S7
+  HANDOFF.md                   START HERE to continue the project (context, rules, guides)
+  README.md                    workflow, environments, commit rules
+  S7_final_report.md           final report; S2_faculty_results.md: faculty-track analysis
+  checkpoints/                 one checkpoint per stage; logs/: evidence of every stage and review
+  faculty_TaskVoCSI_v2/        faculty code, UNMODIFIED (main track) + its run results
+  S2_analysis/, manifests/, tools/
+docs/5G_group_5.pdf            project specification (equation numbers)
+deprecated/                    superseded files kept for the record (see deprecated/README.md)
+```
+
+## How a slot works
+
+For every slot, and for every scheme on the same channel and importance realisation:
+
+1. Channel step; true beam gains; pilot estimate.
+2. Importance v_k(t) of each user's message (critical / normal / background).
+3. Outcomes of the feedback modes 1–3 (encode, decode, beam choice, SINR, Q), shared by all schemes.
+4. Each scheme's own beam predictor gives the predicted gains and a confidence (mode 0).
+5. The scheme sees only gNB-side information (`DecisionInputs`: predicted gains, confidence, age of
+   the last report, last mode, message types, importance, estimated values) and picks the modes.
+   A hard check enforces the feedback budget.
+6. The chosen outcome is realised and logged; the predictor keeps what the gNB actually received.
+
+A test replaces the true channel with garbage after step 3: no non-genie decision changes, so no
+scheme can cheat. The **best-beam oracle** (true best beam for everyone, free) is evaluated after the
+decisions; it defines which critical slots are feasible at all.
 
 ## Schemes
 
-The four schemes in every main figure (same colour and marker in all figures):
-
-| name | definition |
+| Name | Definition |
 |---|---|
-| **Exact** | Exact DP (multiple-choice knapsack) on the **true** utilities U[k][m] of the slot. A genie upper bound; not implementable. |
-| **Optimised** | The same exact DP on the **estimated** utilities Uhat[k][m] of the TVCSI estimator. |
-| **Proposed** | Greedy marginal-TVCSI upgrades on the same Uhat: per user, take the upper concave hull of (C_m, Uhat_m). Repeatedly apply the affordable upgrade with the largest positive slope (Uhat_m' - Uhat_m) / (C_m' - C_m). |
-| **Baseline** | Periodic round-robin feedback (rule below). `baseline.kind: snr_threshold` swaps in the SNR-threshold baseline. |
+| **Exact** | exact DP on the **true** per-mode utilities: genie upper bound, not implementable |
+| **Optimised** | exact DP on the **learned** utility estimates |
+| **Proposed** | greedy marginal-value upgrades on the learned estimates (≈ Optimised, ~0.1 ms per decision) |
+| Proposed_risk | Proposed + virtual queue that raises the value of feedback for critical users who fail too often |
+| **Baseline** | periodic round robin, fixed 64-bit mode (rule in ASSUMPTIONS.md) |
+| fill_periodic, fill_age, fill_uncertainty, fill_importance, fill_channel | the five faculty baselines: order users by round robin / oldest report / least certain beam / importance / weakest link, give each the largest report that fits |
+| prediction_only, importance_only, snr_threshold, full_feedback | further references (no feedback; most important first; weakest believed link first; everyone max, over budget) |
+| Proposed_no_importance | ablation: importance ignored in the value estimate |
+| Proposed_plugin, Optimised_plugin, Proposed_plugin_no_* | the old mean-regret plug-in estimator (before S4), kept as ablations |
 
-Every result also has a `BestBeam_oracle` row: the true best beam for every user in every slot,
-for free. It is evaluation-only (never seen by a scheme), bounds every scheme, and defines which
-critical slots are feasible (see ASSUMPTIONS.md items 37-42).
+## Task quality (Phase 2)
 
-Gaps: Exact - Optimised is the information gap, Optimised - Proposed the greedy gap, and
-Proposed - Baseline the contribution. The ordering is not forced. Each scheme's predictor history
-depends on its own decisions, so trajectories diverge. `results/summary.md` reports every point
-where the expected ordering fails.
+Q is the PHY abstraction used by system-level simulators: Q_type(γ) = 1 − BLER_type(γ), measured by
+`scripts/measure_q.py` with Sionna's standard-compliant 5G NR PDSCH chain (TB CRC, LDPC, rate
+matching, scrambling, QAM, AWGN, APP demapper, BP decoder) for each message type's payload
+(1200 / 300 / 50 bytes) over the user's PRBs, with the lowest MCS whose transport block holds the
+payload. 18 curves, validated against NVIDIA's tables and a finite-blocklength bound. Every value and
+its source: ASSUMPTIONS.md (Phase 2, P13–P24).
 
-**Periodic baseline rule (exact).** Fixed mode m_fixed = 2. Period
-P = ceil(K * C_mfixed / C_FB_max). User k uses mode m_fixed in slot t iff (t + k) mod P == 0;
-everyone else uses mode 0. If the chosen users exceed C_FB_max, users are dropped in ascending
-index order until the slot is feasible. If C_FB_max < C_mfixed, no one ever feeds back.
+## Learned estimator (S4) and trained models (S6)
 
-Supplementary schemes (only in `supp*` figures and the summary table):
+* **Estimator** (`src/tvcsi/estimator.py`): an ExtraTrees regressor predicts, per user and feedback
+  mode, the expected task quality and the outage probability from gNB-side features only. Trained on
+  train seeds 3000–3019, tuned on validation seeds 2000–2004, reported on test seeds 1000–1009; frozen
+  and reused at every sweep point.
+* **Trained models** (`src/tvcsi/models/trained.py`, weights `data/models/s6_models.npz`): a 4-bit
+  progressive CSI codec (adopted) and a GRU beam predictor (it ties "reuse the last beam", so
+  persistence is kept). `models: trained` in the config switches them on. Training data can also be
+  exported with `python scripts/export_dataset.py` (`results/dataset/`, not in git).
 
-| name | definition |
+## Figures (`figures/final_20261103/`)
+
+Defaults unless varied: K = 8, M = B = 32 beams, 30 km/h, 15 dB, 25 % critical users, budget 25 %,
+T = 2000 slots, 10 test seeds; bands = 95 % t-intervals.
+
+| File | Shows |
 |---|---|
-| prediction_only | every user mode 0 |
-| importance_only | mode 3 to users in descending v_k until the budget is spent (ignores predictor confidence) |
-| snr_threshold | mode m_fixed to users in ascending gamma_ref (weakest believed links first) until the budget is spent |
-| full_feedback | every user mode 3; violates the budget; reference only |
-| Proposed_no_confidence | Proposed with the confidence ignored (pooled regret per mode) |
-| Proposed_no_importance | Proposed with v_k = 1 inside Uhat |
+| fig01–fig05 | utility vs feedback budget / number of users / speed / critical share / SNR (main schemes) |
+| base01–base05 | the same five sweeps: Proposed vs all eight simple baselines |
+| supp01–supp05 | the same sweeps with the supplementary references and the ablations |
+| fig06, fig07 | beam regret vs speed, vs budget |
+| fig08 | beam switching rate vs speed |
+| fig09 | utility per feedback bit vs budget |
+| fig10 | feedback budget needed to reach 90 % of full-feedback utility, vs speed |
+| fig11 | CVaR (worst 5 % slots) of the semantic loss vs budget |
+| fig12 | critical-user violation rate vs budget: all slots, and feasible slots only |
+| fig13 | distribution (CDF) of the per-slot semantic loss |
+| fig14 | solver run time vs number of users |
+| fig15 | objective of problem P1 (utility minus feedback, switching and risk penalties) vs budget |
+| fig16 | worst critical user's violation rate vs speed and budget (10 % target) |
 
-## TVCSI estimator (spec 6)
+## Documentation map
 
-`r_hat[m][bin]` is the mean realised regret of mode m among samples whose predictor confidence
-falls in a confidence-quantile bin. It is fitted on validation seeds under `prediction_only` and
-random-mode policies. Then
-
-```
-gamma_ref_k = snr * max_b ghat0_kb / M
-Uhat[k][m]  = v_k * Q_k( gamma_ref_k * (1 - r_hat[m][bin(c_k)]) )
-TVCSI[k][m] = (Uhat[k][m] - Uhat[k][0]) / (C_m + eps)          (Eq. 32)
-```
-
-By default a table is fitted at every sweep point (ASSUMPTIONS.md, item 21).
-
-## Figures
-
-Figures 1-13: one parameter varied, the rest at the defaults (K = 8, M = B = 32, 30 km/h,
-15 dB, crit_share 0.25, budget_frac 0.25, T = 2000 with 100 warm-up slots, 10 test seeds).
-Each point is the mean over seeds with a 95 % t-interval band.
-
-| # | file | shows |
-|---|---|---|
-| 1 | fig01_utility_vs_budget | utility (mean over slots of sum_k U_k) vs budget fraction of K*C_3 |
-| 2 | fig02_utility_vs_users | utility per user vs K (budget scales with K) |
-| 3 | fig03_utility_vs_speed | utility vs user speed: how fast prediction goes stale |
-| 4 | fig04_utility_vs_critical_share | utility vs share of critical users |
-| 5 | fig05_utility_vs_snr | utility vs SNR (pilot SNR moves with it) |
-| 6 | fig06_regret_vs_speed | mean beam-semantic regret (Eq. 15) vs speed |
-| 7 | fig07_regret_vs_budget | mean regret vs budget |
-| 8 | fig08_switch_rate_vs_speed | served-beam switch rate (Eq. 38) vs speed |
-| 9 | fig09_utility_per_bit_vs_budget | utility / mean feedback bits per slot: efficiency of the bits spent |
-| 10 | fig10_bits_to_target_vs_speed | smallest budget fraction reaching 0.9 x full-feedback utility at each speed (interpolated on the budget grid; missing = never reached) |
-| 11 | fig11_cvar_vs_budget | CVaR_0.95 of the per-slot semantic loss L_sem (Eqs. 36-37) |
-| 12 | fig12_violation_vs_budget | (a) fraction of (critical user, slot) pairs with Q < Q_min = 0.8, with the true best-beam oracle as the floor; (b) the same over feasible slots only (where the oracle reaches Q_min), against eps (Eq. 39j) |
-| 13 | fig13_loss_cdf | empirical CDF of per-slot L_sem at the default point, pooled over seeds |
-| 15 | fig15_objective_vs_budget | P1 objective (Eq. 39a): utility minus feedback, switching and CVaR penalties (placeholder weights) |
-| 14 | fig14_runtime_vs_K | wall time per slot decision of brute force (K <= 10), DP, greedy and the periodic rule (log scale). Solver curves, not the four schemes. |
-
-`supp01..supp05` repeat figures 1-5. Panel (a) adds the supplementary baselines and the
-full-feedback reference; panel (b) shows Proposed against its two ablations. `calib_q` is the Q
-calibration plot.
-
-## Plugging in trained models
-
-Set `models: trained` and name the classes in the config:
-
-```yaml
-trained:
-  encoder: mypkg.models:SemanticEncoder     # subclass of tvcsi.models.base.Encoder
-  decoder: mypkg.models:SemanticDecoder     # subclass of Decoder
-  predictor: mypkg.models:GRUPredictor      # subclass of BeamPredictor
-  kwargs: {checkpoint_dir: /path/to/ckpt}
-```
-
-All interfaces are batched over users (see `src/tvcsi/models/base.py`). Train on
-`results/dataset/*.npz`. The files hold the same channels, pilot estimates, importance and
-message types the simulator uses, split by seed: train 3000-3019, val 2000-2004, test 1000-1009.
-
-The dataset (about 290 MB) is not in git, because the files exceed GitHub's 100 MB limit.
-Rebuild it in about 30 seconds with `python scripts/export_dataset.py`. The output is identical
-on every run, because it uses the same fixed seeds as the simulator.
+| Question | Read |
+|---|---|
+| How do I continue the project? | `research/HANDOFF.md` |
+| What did each stage do and find? | `research/checkpoints/S0…S7_checkpoint.md` |
+| Final results and limitations | `research/S7_final_report.md` |
+| Why this parameter value? | `ASSUMPTIONS.md` |
+| How were the results reviewed? | `research/logs/review_S3_S7/REVIEW.md`, `research/logs/review_codex/README.md` |

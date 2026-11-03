@@ -1,0 +1,20 @@
+Repository clean-up: deprecated/ folder, PNG-only figures, new README with results
+
+- deprecated/: superseded files moved, not deleted (deprecated/README.md lists each):
+  Phase 2 results and per-point tables (results/ root) and Phase 2 figures (figures/ root),
+  docs/next_steps_plan.pdf, estimator reports under their old cache names.
+- Figure PDFs removed (each had a PNG twin); src/tvcsi/plots.py now writes PNG only.
+  Kept: docs/5G_group_5.pdf (project specification) and the faculty-run PDFs inside
+  research/faculty_TaskVoCSI_v2/ (main track, left untouched).
+- figures/before_after/: Phase 2 vs final figures side by side
+  (research/tools/make_before_after.py).
+- README.md rewritten: status, results at a glance (which track, headline numbers, default
+  table, before/after and baseline figures, where every result is, limitations), quick start,
+  repository structure, schemes, figure list, documentation map.
+- research/README.md, HANDOFF.md, ASSUMPTIONS.md, S7 report: paths and test counts updated.
+  Checkpoints and logs are historical records and keep their original paths.
+
+No code behaviour changed: 74 tests passed, faculty code 23/23 identical, final results
+reproduce (research/logs/review_S3_S7/reproduce_final.py).
+
+Co-authored-by: Durgesh Janapareddy <durgeshjanapareddy9@gmail.com>
