@@ -11,6 +11,8 @@ where everything is, rules, and the detailed spec of the next stage.
 | Path | What it is | Rule |
 |---|---|---|
 | repository root (`src/tvcsi`, `scripts/`, `configs/`, `data/`, `tests/`, …) | **side track**: our TVCSI_sim (Phase 1 + Phase 2 done) that S3–S6 extend with selected faculty components | edit only in S3–S6, one stage at a time |
+| `results/final_20261103/`, `figures/final_20261103/` | final side-track results and figures (PNG only) | never overwrite; new runs go to new dated folders |
+| `deprecated/` | superseded files kept for the record (`deprecated/README.md`) | not used by code or tests |
 | `research/faculty_TaskVoCSI_v2/` | **main track**: the faculty's TaskVoCSI_v2, **unmodified** | never edit the code; runs write only to new `results/<run>_<date>/` folders |
 | `research/checkpoints/` | one self-contained `S<n>_checkpoint.md` per finished stage | read the latest one first |
 | `research/logs/S<n>/` | console logs and evidence of each stage | append only |
@@ -50,7 +52,7 @@ python -m venv ../venvs/tvcsi_combined
 #   only for re-measuring the 5G quality curves or for S6 training:
 #   pip install torch --index-url https://download.pytorch.org/whl/cu128   (or .../whl/cpu without a GPU)
 #   pip install sionna-no-rt==2.2.0
-../venvs/tvcsi_combined/Scripts/python -m pytest -q        # expect: 70 passed, 1 skipped (71 passed with sionna; 39 + 1 xfailed before S4)
+../venvs/tvcsi_combined/Scripts/python -m pytest -q        # expect: 73 passed, 1 skipped (74 passed with sionna; 39 + 1 xfailed before S4)
 
 # main track (faculty code; CPU only by design)
 python -m venv ../venvs/taskv2
