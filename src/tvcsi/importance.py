@@ -21,10 +21,14 @@ def assign_types(K: int, crit_share: float) -> np.ndarray:
     return types
 
 
+def per_type(values: dict, types: np.ndarray) -> np.ndarray:
+    """Look up a {type name: value} mapping for every user."""
+    return np.array([values[TYPE_NAMES[t]] for t in types], dtype=float)
+
+
 def gamma0_per_user(cfg: dict, types: np.ndarray) -> np.ndarray:
     """Quality threshold gamma0 [dB] of each user's message type."""
-    g0 = cfg["quality"]["gamma0_db"]
-    return np.array([g0[TYPE_NAMES[t]] for t in types], dtype=float)
+    return per_type(cfg["quality"]["gamma0_db"], types)
 
 
 def generate_importance(cfg: dict, types: np.ndarray, rng: np.random.Generator,

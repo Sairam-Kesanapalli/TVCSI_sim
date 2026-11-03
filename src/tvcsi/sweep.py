@@ -23,7 +23,7 @@ import pandas as pd  # noqa: E402
 
 from .config import apply_overrides, feedback_budget, feedback_costs, load_config, resolve_path  # noqa: E402
 from .schemes import periodic_modes  # noqa: E402
-from .sim import fit_tvcsi_table, metrics_rows, simulate  # noqa: E402
+from .sim import ORACLE, fit_tvcsi_table, metrics_rows, simulate  # noqa: E402
 from .solvers import brute_force, dp_mckp, greedy_tvcsi  # noqa: E402
 from .tvcsi import TVCSITable  # noqa: E402
 
@@ -54,8 +54,16 @@ def config_key(cfg: dict) -> str:
 
 
 def _table_cfg(cfg: dict) -> dict:
-    """The parts of a config that a table fit depends on (schemes/sweeps/paths do not matter)."""
-    return {k: v for k, v in cfg.items() if k not in ("sweeps", "schemes", "paths", "plots", "runtime")}
+    """The parts of a config that a table fit depends on.
+
+    Excluded: schemes/sweeps/paths/plots/runtime (bookkeeping); the evaluation-only constraints (no
+    decision reads them); and quality/radio/link_level, because the table holds beam REGRET only and
+    the fitting policies (prediction_only, random modes) never look at Q, so no fitted number depends
+    on the quality model (tests/test_phase2_quality.py checks this).
+    """
+    return {k: v for k, v in cfg.items()
+            if k not in ("sweeps", "schemes", "paths", "plots", "runtime", "constraints",
+                         "quality", "radio", "link_level")}
 
 
 def get_table(cfg: dict) -> TVCSITable:
@@ -121,7 +129,7 @@ def run_sweeps(cfg: dict, n_jobs: int) -> None:
     frames: dict[str, list[pd.DataFrame]] = {}
     for p in points:
         df = pd.DataFrame(by_key[p["key"]])
-        df = df[df["scheme"].isin(p["schemes"])]
+        df = df[df["scheme"].isin(p["schemes"] + [ORACLE])]   # the oracle row is always kept
         frames.setdefault(p["sweep"], []).append(df.assign(sweep=p["sweep"], param=p["param"], x=p["x"], x2=p["x2"]))
     for name, fs in frames.items():
         df = pd.concat(fs, ignore_index=True)

@@ -13,7 +13,7 @@ from pathlib import Path
 
 import numpy as np
 
-from .link import task_quality
+from .quality import QualityModel
 
 
 @dataclass
@@ -77,7 +77,7 @@ def gamma_ref(ghat0: np.ndarray, snr_lin: float, M: int) -> np.ndarray:
 
 
 def expected_utility(table: TVCSITable, gref: np.ndarray, conf: np.ndarray, v: np.ndarray,
-                     gamma0_db: np.ndarray, s_db: float, use_confidence: bool = True,
+                     quality: QualityModel, use_confidence: bool = True,
                      use_importance: bool = True) -> np.ndarray:
     """Expected utility Uhat[k][m] = v_k Q_k(gamma_ref_k (1 - r_hat[m][bin(c_k)])) (spec 6).
 
@@ -86,7 +86,7 @@ def expected_utility(table: TVCSITable, gref: np.ndarray, conf: np.ndarray, v: n
     """
     r = table.regret(conf, use_confidence)
     gamma = gref[:, None] * (1.0 - r)
-    Q = task_quality(gamma, gamma0_db[:, None], s_db)
+    Q = quality(gamma, user_axis=0)
     w = v if use_importance else np.ones_like(v)
     return w[:, None] * Q
 

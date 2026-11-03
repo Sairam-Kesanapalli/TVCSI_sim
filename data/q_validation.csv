@@ -1,0 +1,19 @@
+curve,msg_type,n_prb,mcs,num_cbs,cb_bits,snr_bler01_measured,snr_bler01_tables,difference_db,tables_extrapolated,fbl_bound_db,measured_above_fbl_db,tables_above_fbl_db,note
+critical|9600b|135prb|12sym|12dmrs|mcs_t1,critical,135,4,2.0,5392.0,-1.278,-2.263,0.985,True,-2.742,1.464,0.479,
+normal|2400b|135prb|12sym|12dmrs|mcs_t1,normal,135,0,,,,,,,,,,no NVIDIA table for MCS 0-2
+background|400b|135prb|12sym|12dmrs|mcs_t1,background,135,0,,,,,,,,,,no NVIDIA table for MCS 0-2
+critical|9600b|45prb|12sym|12dmrs|mcs_t1,critical,45,12,2.0,5008.0,5.179,4.677,0.502,True,3.554,1.625,1.123,
+critical|9600b|67prb|12sym|12dmrs|mcs_t1,critical,67,8,2.0,5264.0,2.362,2.476,-0.114,True,1.17,1.192,1.306,
+critical|9600b|33prb|12sym|12dmrs|mcs_t1,critical,33,15,2.0,5264.0,8.058,7.902,0.155,True,6.471,1.587,1.431,
+critical|9600b|22prb|12sym|12dmrs|mcs_t1,critical,22,20,2.0,4880.0,11.85,11.711,0.139,True,9.779,2.071,1.932,
+critical|9600b|16prb|12sym|12dmrs|mcs_t1,critical,16,25,2.0,5136.0,16.721,16.682,0.039,True,14.606,2.116,2.077,
+normal|2400b|67prb|12sym|12dmrs|mcs_t1,normal,67,1,,,,,,,,,,no NVIDIA table for MCS 0-2
+background|400b|67prb|12sym|12dmrs|mcs_t1,background,67,0,,,,,,,,,,no NVIDIA table for MCS 0-2
+normal|2400b|45prb|12sym|12dmrs|mcs_t1,normal,45,3,1.0,2992.0,-2.629,-2.848,0.219,True,-3.628,0.999,0.78,
+background|400b|45prb|12sym|12dmrs|mcs_t1,background,45,0,,,,,,,,,,no NVIDIA table for MCS 0-2
+normal|2400b|33prb|12sym|12dmrs|mcs_t1,normal,33,4,1.0,2616.0,-1.697,-2.424,0.727,True,-2.698,1.001,0.274,
+background|400b|33prb|12sym|12dmrs|mcs_t1,background,33,0,,,,,,,,,,no NVIDIA table for MCS 0-2
+normal|2400b|22prb|12sym|12dmrs|mcs_t1,normal,22,6,1.0,2552.0,0.437,0.438,-0.001,True,-0.588,1.025,1.026,
+background|400b|22prb|12sym|12dmrs|mcs_t1,background,22,0,,,,,,,,,,no NVIDIA table for MCS 0-2
+normal|2400b|16prb|12sym|12dmrs|mcs_t1,normal,16,8,1.0,2488.0,2.314,2.325,-0.011,True,1.192,1.123,1.133,
+background|400b|16prb|12sym|12dmrs|mcs_t1,background,16,0,,,,,,,,,,no NVIDIA table for MCS 0-2

@@ -16,5 +16,6 @@ step "TVCSI table (default)"; "$PYTHON" scripts/fit_tvcsi_table.py
 step "sweeps + runtime";      "$PYTHON" -m tvcsi.sweep
 step "figures";               "$PYTHON" -m tvcsi.plots
 step "summary";               "$PYTHON" scripts/make_summary.py
+step "sensitivity";           "$PYTHON" scripts/sensitivity.py
 step "dataset export";        "$PYTHON" scripts/export_dataset.py
 echo; echo "done: results/ and figures/"

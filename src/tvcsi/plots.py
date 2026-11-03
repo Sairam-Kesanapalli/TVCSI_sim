@@ -34,6 +34,7 @@ STYLE = {
     "Proposed_no_confidence": dict(color="#4a3aa7", marker="<", ls=":"),
     "Proposed_no_importance": dict(color="#e34948", marker=">", ls=":"),
     "full_feedback":          dict(color="#8a8985", marker="*", ls=(0, (1, 1))),
+    "BestBeam_oracle":        dict(color="#8a8985", marker="", ls=":"),
 }
 CATEGORICAL = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#4a3aa7", "#e34948"]
 
@@ -112,8 +113,8 @@ LINE_FIGS = [
      "Utility per feedback bit [1/bit]", "Utility per mean feedback bit vs budget"),
     ("fig11_cvar_vs_budget", "budget", "cvar", BUDGET_LABEL,
      "CVaR$_{0.95}$ of $L^{sem}$ (Eq. 37)", "Tail semantic loss vs feedback budget"),
-    ("fig12_violation_vs_budget", "budget", "violation_rate", BUDGET_LABEL,
-     "Critical violation rate $\\Pr[Q_k<Q_{min}]$", "Critical-user violation rate vs budget"),
+    ("fig15_objective_vs_budget", "budget", "objective_p1", BUDGET_LABEL,
+     "P1 objective (Eq. 39a) per slot", "Utility minus feedback, switching and CVaR penalties"),
 ]
 SUPP_FIGS = LINE_FIGS[:5]   # the five utility figures
 
@@ -123,7 +124,8 @@ def scheme_label(name: str, cfg: dict) -> str:
         kind = cfg["baseline"]["kind"]
         return f"Baseline (periodic, m={cfg['baseline']['m_fixed']})" if kind == "periodic" else "Baseline (SNR threshold)"
     return {"Exact": "Exact (genie DP)", "Optimised": "Optimised (DP on $\\hat U$)",
-            "Proposed": "Proposed (greedy TVCSI)"}.get(name, name.replace("_", " "))
+            "Proposed": "Proposed (greedy TVCSI)",
+            "BestBeam_oracle": "True best-beam oracle (floor)"}.get(name, name.replace("_", " "))
 
 
 def aggregate(df: pd.DataFrame, metric: str, keys=("x", "scheme")) -> pd.DataFrame:
@@ -135,7 +137,7 @@ def aggregate(df: pd.DataFrame, metric: str, keys=("x", "scheme")) -> pd.DataFra
     return pd.DataFrame(rows)
 
 
-RATE_METRICS = {"regret", "switch_rate", "violation_rate"}   # bounded in [0, 1]
+RATE_METRICS = {"regret", "switch_rate", "violation_rate", "violation_rate_feasible"}   # bounded in [0, 1]
 
 
 def draw_curves(ax, agg: pd.DataFrame, schemes: list[str], cfg: dict, unit_interval: bool = False) -> None:
@@ -148,6 +150,8 @@ def draw_curves(ax, agg: pd.DataFrame, schemes: list[str], cfg: dict, unit_inter
         st = STYLE[name]
         ax.plot(a["x"], a["mean"], color=st["color"], marker=st["marker"], ls=st["ls"],
                 label=scheme_label(name, cfg), markeredgecolor="white", markeredgewidth=0.8)
+        if name == "BestBeam_oracle":   # a reference floor, drawn without a band
+            continue
         half = a["half"].fillna(0)
         ax.fill_between(a["x"], np.clip(a["mean"] - half, lo, hi), np.clip(a["mean"] + half, lo, hi),
                         color=st["color"], alpha=0.14, lw=0)
@@ -189,6 +193,33 @@ def supp_figure(cfg, res_dir, fig_dir, idx, fname, sweep, metric, xlabel, ylabel
     fig.tight_layout()
     stamp_dummy(fig, cfg)
     save(fig, fig_dir, f"supp{idx:02d}_{fname.split('_', 1)[1]}", cfg["plots"]["dpi"])
+
+
+def fig12(cfg, res_dir, fig_dir) -> None:
+    """Critical violation rate vs budget, split by the best-beam feasibility oracle.
+
+    (a) all critical slots, with the oracle as the floor no scheme can go below;
+    (b) only the slots in which the true best beam reaches Q_min: the part a scheduler controls.
+    """
+    df = load_sweep(res_dir, "budget")
+    eps = cfg["constraints"]["eps_violation"]
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12.4, 4.6))
+    draw_curves(ax1, aggregate(df, "violation_rate"), MAIN + ["BestBeam_oracle"], cfg, unit_interval=True)
+    ax1.set(xlabel=BUDGET_LABEL, ylabel="Critical violation rate $\\Pr[Q_k<Q_{min}]$",
+            title="(a) all critical slots")
+    ax1.legend(loc="best", fontsize=7.5)
+    draw_curves(ax2, aggregate(df, "violation_rate_feasible"), MAIN, cfg, unit_interval=True)
+    ax2.axhline(eps, color="#e34948", lw=1.2, ls="--", label=f"tolerance $\\epsilon$ = {eps:g} (Eq. 39j)")
+    ax2.set(xlabel=BUDGET_LABEL, ylabel="Violation rate among feasible slots",
+            title="(b) only slots where the true best beam meets $Q_{min}$")
+    ax2.legend(loc="best", fontsize=7.5)
+    inf = df[df["scheme"] == "BestBeam_oracle"]["crit_infeasible_share"].mean()
+    fig.suptitle("Critical-user violation rate vs feedback budget", fontsize=11)
+    _caption(fig, df["seed"].nunique(),
+             f"; {100 * inf:.1f}% of critical slots are infeasible even with the true best beam")
+    fig.tight_layout()
+    stamp_dummy(fig, cfg)
+    save(fig, fig_dir, "fig12_violation_vs_budget", cfg["plots"]["dpi"])
 
 
 def first_crossing(x: np.ndarray, y: np.ndarray, target: float) -> float:
@@ -297,6 +328,7 @@ def make_all(cfg: dict) -> None:
     for spec in LINE_FIGS:
         line_figure(cfg, res_dir, fig_dir, *spec)
     fig10(cfg, res_dir, fig_dir)
+    fig12(cfg, res_dir, fig_dir)
     fig13(cfg, res_dir, fig_dir)
     fig14(cfg, res_dir, fig_dir)
     for i, spec in enumerate(SUPP_FIGS, start=1):

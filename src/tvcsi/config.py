@@ -48,6 +48,13 @@ def feedback_budget(cfg: dict) -> float:
     return float(cfg["feedback"]["budget_frac"] * cfg["system"]["K"] * feedback_costs(cfg)[-1])
 
 
+def user_bandwidth_hz(cfg: dict) -> float:
+    """Bandwidth W_k of one user for Eq. 39i: the carrier's PRBs shared equally by the K users
+    (floor(carrier_prbs / K) PRBs each, at least one)."""
+    r = cfg["radio"]
+    return max(1, r["carrier_prbs"] // cfg["system"]["K"]) * r["prb_hz"]
+
+
 def doppler_hz(speed_kmh: float, fc_hz: float) -> float:
     """Maximum Doppler shift f_d = (v / 3.6) * f_c / c."""
     return speed_kmh / 3.6 * fc_hz / C_LIGHT

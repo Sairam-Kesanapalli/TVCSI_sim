@@ -39,6 +39,16 @@ def cvar_min_eta(L: np.ndarray, alpha: float) -> float:
     return float(obj.min())
 
 
+def objective_p1(utility: float, bits: float, switches: float, cvar_loss: float,
+                 lambda_F: float, lambda_B: float, lambda_R: float) -> float:
+    """Empirical objective of P1 (Eq. 39a) over one run.
+
+    utility, bits and switches are per-slot means of sum_k U_k, sum_k C_{x_k} and sum_k s_k;
+    cvar_loss is CVaR_alpha(L_sem) over the same slots.
+    """
+    return utility - lambda_F * bits - lambda_B * switches - lambda_R * cvar_loss
+
+
 def switch_indicator(b: np.ndarray, b_prev: np.ndarray) -> np.ndarray:
     """Beam-switch indicator s_k(t) = 1{b_k(t) != b_k(t-1)} (Eq. 38)."""
     return (b != b_prev).astype(float)
