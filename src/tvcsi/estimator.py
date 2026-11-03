@@ -221,7 +221,7 @@ def _fit_spec(cfg: dict) -> dict:
     """Everything the fitted model depends on (the hash names the cache file)."""
     keep = ("system", "channel", "link", "quality", "radio", "importance", "feedback", "dummy",
             "models", "trained", "estimator", "sim")
-    spec = {k: cfg[k] for k in keep}
+    spec = {k: cfg[k] for k in keep if not (k == "trained" and cfg["models"] == "dummy")}
     spec["seeds"] = {"train": cfg["seeds"]["train"], "val": cfg["seeds"]["val"]}
     spec["estimator"] = {k: v for k, v in cfg["estimator"].items() if k != "cache_dir"}
     return spec

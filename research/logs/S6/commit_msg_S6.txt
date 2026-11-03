@@ -1,0 +1,19 @@
+S6: trained 4-bit progressive codec and GRU predictor (gate: persistence kept)
+
+- src/tvcsi/models/trained.py: numpy inference of the trained codec (32 latent values,
+  4 bits, modes send 8/16/32 values = 32/64/128 bits), GRU predictor with a learned
+  confidence, and Persistence with the trained-model signature.
+- scripts/train_models.py: torch (CPU) training on train seeds over a speed/SNR grid,
+  epochs chosen on validation seeds, test diagnostics; weights in
+  data/models/s6_models.npz (190 kB) + .json.
+- config: trained section (codec + Persistence) and models_train; default stays dummy.
+- estimator cache hash ignores the trained section with dummy models (refitted,
+  identical numbers); estimator reports for the three model setups.
+- tests/test_s6_models.py (numpy = torch to 1e-9, code sizes, simulator, no leak).
+- plots / make_summary prepared for S7 (baseline and reliability figures, Holm table).
+- ASSUMPTIONS.md 68-73, P33-P35; research/logs/S6/; S6 checkpoint; stage tables.
+
+Gate: GRU vs persistence at the default point on test seeds: regret 0.2922 vs
+0.2921 (5/10 seeds), so persistence is kept; the GRU helps at 3 / 60 km/h and 5 dB.
+Codec beats the dummy codec at 32 and 64 bits. With the trained codec Proposed
+2.774 vs periodic 2.729 (10/10 seeds). Suite: 70 passed, 1 skipped.

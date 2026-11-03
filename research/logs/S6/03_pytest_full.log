@@ -1,0 +1,8 @@
+................s......................................................  [100%]
+=========================== short test summary info ===========================
+SKIPPED [1] tests\test_phase2_quality.py:118: could not import 'sionna': No module named 'sionna'
+70 passed, 1 skipped in 108.57s (0:01:48)
+
+real	1m50.837s
+user	0m0.000s
+sys	0m0.015s

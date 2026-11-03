@@ -1,0 +1,43 @@
+configs 10, train pairs 20, val pairs 10
+codec data: train 320000, val 160000 (5s)
+  codec epoch 1: val regret per mode [0.479, 0.2605, 0.2301]
+  codec epoch 2: val regret per mode [0.3761, 0.175, 0.1453]
+  codec epoch 3: val regret per mode [0.3583, 0.1553, 0.1193]
+  codec epoch 4: val regret per mode [0.3521, 0.1463, 0.1086]
+  codec epoch 5: val regret per mode [0.2861, 0.1373, 0.1044]
+  codec epoch 6: val regret per mode [0.261, 0.1284, 0.1022]
+  codec epoch 7: val regret per mode [0.254, 0.1256, 0.0974]
+  codec epoch 8: val regret per mode [0.2471, 0.1238, 0.0956]
+  codec epoch 9: val regret per mode [0.2357, 0.1216, 0.0952]
+  codec epoch 10: val regret per mode [0.2125, 0.1192, 0.0945]
+  codec epoch 11: val regret per mode [0.2046, 0.1176, 0.0928]
+  codec epoch 12: val regret per mode [0.2004, 0.1169, 0.0921]
+  codec epoch 13: val regret per mode [0.1971, 0.1168, 0.0927]
+  codec epoch 14: val regret per mode [0.1961, 0.1167, 0.0926]
+  codec epoch 15: val regret per mode [0.1925, 0.1156, 0.0912]
+  codec: chosen epoch 15 (val mean regret 0.1331)
+gru data: train 160000, val 80000 windows (102s)
+  gru epoch 1: val regret 0.3476 acc 0.4718
+  gru epoch 2: val regret 0.3399 acc 0.4800
+  gru epoch 3: val regret 0.3391 acc 0.4808
+  gru epoch 4: val regret 0.3412 acc 0.4774
+  gru epoch 5: val regret 0.3376 acc 0.4819
+  gru epoch 6: val regret 0.3375 acc 0.4818
+  gru epoch 7: val regret 0.3337 acc 0.4844
+  gru epoch 8: val regret 0.3342 acc 0.4857
+  gru epoch 9: val regret 0.3348 acc 0.4838
+  gru epoch 10: val regret 0.3338 acc 0.4852
+  gru epoch 11: val regret 0.3328 acc 0.4864
+  gru epoch 12: val regret 0.3333 acc 0.4865
+  gru: chosen epoch 11 (val regret 0.3328)
+  test default: GRU regret 0.2922 acc 0.5033 | persistence regret 0.2921 acc 0.5098 | gain (-7.493644952774047e-05, 0.004398300291378379) (5/10) | conf Brier 0.2315
+  test speed3: GRU regret 0.1015 acc 0.7381 | persistence regret 0.1137 acc 0.7339 | gain (0.012187207490205765, 0.007623189572168183) (8/10) | conf Brier 0.1725
+  test speed60: GRU regret 0.4275 acc 0.3605 | persistence regret 0.4359 acc 0.3550 | gain (0.008395516872406006, 0.005134834615449143) (9/10) | conf Brier 0.2266
+  test snr5: GRU regret 0.4858 acc 0.3478 | persistence regret 0.5567 acc 0.3045 | gain (0.07088186144828797, 0.00865690811669916) (10/10) | conf Brier 0.2155
+  test codec trained: {'regret_per_mode': [0.1549, 0.0785, 0.0572], 'acc_per_mode': [0.6948, 0.7835, 0.8151]}
+  test codec dummy:   {'regret_per_mode': [0.1953, 0.0858, 0.0436], 'acc_per_mode': [0.6227, 0.7638, 0.8409]}
+wrote C:\Users\palya\OneDrive\Desktop\TVCSI_sim\data\models\s6_models.npz (194s)
+
+real	3m20.246s
+user	0m0.015s
+sys	0m0.000s

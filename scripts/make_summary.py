@@ -23,7 +23,12 @@ from tvcsi.schemes import Scheme
 from tvcsi.quality import prbs_per_user
 from tvcsi.sim import ORACLE, simulate
 from tvcsi.solvers import dp_mckp, greedy_tvcsi
+from tvcsi.estimator import get_estimator
+from tvcsi.stats import paired_holm
 from tvcsi.sweep import ONE_D_SWEEPS, get_table
+
+SIMPLE_BASELINES = ["Baseline", "fill_periodic", "fill_age", "fill_uncertainty", "fill_importance",
+                    "fill_channel", "importance_only", "snr_threshold"]
 
 METRICS = [("utility", "utility", 3), ("regret", "regret", 3), ("cvar", "CVaR0.95", 3),
            ("violation_rate", "crit. violation", 3), ("bits", "bits/slot", 1),
@@ -83,12 +88,13 @@ def _probe_job(args):
             rec["true"].append(U_true[:, 1:] - U_true[:, :1])
         return m_g
 
-    probe = Scheme("probe", decide, estimator="full", uses_truth=True)
-    simulate(cfg, seed, [probe], table=get_table(cfg))
+    probe = Scheme("probe", decide, estimator="learned", uses_truth=True)   # S4: the learned estimator
+    simulate(cfg, seed, [probe], table=get_table(cfg), estimator=get_estimator(cfg))
     return np.array(rec["ratio"]), np.concatenate(rec["est"]), np.concatenate(rec["true"])
 
 
 def diagnostics(cfg: dict) -> dict:
+    get_estimator(cfg)                     # fit / cache once before the workers start
     with ProcessPoolExecutor(cfg["sim"]["n_jobs"] or os.cpu_count()) as pool:
         out = list(pool.map(_probe_job, [(cfg, s) for s in cfg["seeds"]["test"]]))
     ratio = np.concatenate([o[0] for o in out])
@@ -138,6 +144,10 @@ def main() -> None:
               "(log-normal decoding noise) and the persistence beam predictor. They test the "
               "pipeline and the schedulers; they are **not research results** about learned "
               "semantic CSI feedback.", ""]
+    else:
+        L += [f"Models: **trained** (`{cfg['trained']['encoder']}`, `{cfg['trained']['decoder']}`, "
+              f"`{cfg['trained']['predictor']}`; weights `{cfg['trained']['kwargs'].get('weights')}`, "
+              "trained by scripts/train_models.py, research/checkpoints/S6_checkpoint.md).", ""]
     L += [f"Default configuration: K={cfg['system']['K']}, M=B={cfg['system']['M']}, "
           f"speed={cfg['channel']['speed_kmh']:g} km/h, SNR={cfg['link']['snr_db']:g} dB, "
           f"crit_share={cfg['importance']['crit_share']}, budget_frac={cfg['feedback']['budget_frac']} "
@@ -174,6 +184,24 @@ def main() -> None:
           "'39j met' is 1 for a seed when every critical user's violation rate over its feasible slots "
           "is <= eps. The P1 objective is utility - lambda_F bits - lambda_B sum_k s_k - lambda_R CVaR; "
           "it is undefined (n/a) for the oracle, which uses no feedback channel.", ""]
+
+    present = [b for b in SIMPLE_BASELINES if b in set(default["scheme"])]
+    if present:
+        L += ["## Proposed vs every simple baseline (default point, seed-paired, Holm-corrected)", "",
+              "| other | Proposed - other | wins | Holm p | Proposed_risk - other | wins | Holm p |",
+              "|---|---|---|---|---|---|---|"]
+        hp = paired_holm(default, "Proposed", "utility", present).set_index("other")
+        hr = (paired_holm(default, "Proposed_risk", "utility", present).set_index("other")
+              if "Proposed_risk" in set(default["scheme"]) else None)
+        for b in present:
+            a = hp.loc[b]
+            row = f"| {b} | {fmt(a['mean_diff'], a['ci95'], 3)} | {a['wins']}/{a['n']} | {a['p_holm']:.2g} |"
+            if hr is not None:
+                r = hr.loc[b]
+                row += f" {fmt(r['mean_diff'], r['ci95'], 3)} | {r['wins']}/{r['n']} | {r['p_holm']:.2g} |"
+            L.append(row)
+        L += ["", "fill_* are the five faculty baselines (largest mode that fits, ASSUMPTIONS item 64); "
+              "Proposed_risk adds the critical-user virtual queue (items 65-66).", ""]
 
     L += ["## Gap decomposition at the default point (paired by seed)", "",
           "| pair | meaning | utility difference |", "|---|---|---|"]
@@ -229,8 +257,7 @@ def main() -> None:
                  f"vs {pb['utility']:.3f} at {b:g}. Bits used grow {pb['bits'] / pa['bits']:.2f}x but the share of "
                  f"users fed back per slot only {pb['fb_share'] / pa['fb_share']:.2f}x ({pa['fb_share']:.2f} -> "
                  f"{pb['fb_share']:.2f}): the extra bits go mostly into higher modes for the same users, and mean "
-                 f"regret moves {pa['regret']:.3f} -> {pb['regret']:.3f}. This is consistent with the estimator "
-                 "valuing mode 1 at almost nothing (calibration table below).")
+                 f"regret moves {pa['regret']:.3f} -> {pb['regret']:.3f}.")
     above = ex["utility"].mean() > ff["utility"].mean()
     L.append(f"* Exact spends {ex['bits'].mean():.0f} of {feedback_budget(cfg):g} bits per slot on average and "
              f"reaches {ex['utility'].mean():.3f}, {'above' if above else 'below'} full feedback "
@@ -258,14 +285,10 @@ def main() -> None:
     for c in diag["calibration"]:
         L.append(f"| {c['mode']} | {c['est']:.4f} | {c['true']:.4f} | {c['corr']:.3f} |")
     L += ["",
-          "Uhat plugs the *mean* regret of a confidence bin into Q (spec 6): "
-          "Uhat = v Q(gamma_ref (1 - r_hat)). With the persistence predictor the mode-0 regret in "
-          "a bin is bimodal (the beam either stayed or moved), so the plug-in value ignores the "
-          "chance of a large loss, and the confidence (age since feedback) carries little "
-          "information about which user's beam actually moved. Both show up above as an "
-          "underestimated and nearly uncorrelated feedback gain. This is a property of the "
-          "estimator specified for this stage combined with the dummy predictor, not a tuning "
-          "choice; it was left unchanged.", ""]
+          "Uhat = v E[Q | gNB-side features] from the frozen learned estimator (S4, ASSUMPTIONS items "
+          "56-63), fitted on train seeds and chosen on validation seeds; these numbers are on the test "
+          "seeds along the Proposed trajectory. The pre-S4 mean-regret plug-in (kept as Proposed_plugin) "
+          "had a constant estimated gain of 0 here (correlation 0).", ""]
 
     L += ["## Feedback needed to reach "
           f"{cfg['sweeps']['bits_target_frac']:g} x full-feedback utility (fig 10)", "",

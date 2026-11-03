@@ -333,6 +333,40 @@ differ, the prompt was followed.
     t-test, Holm correction over the compared baselines (as faculty `taskv2/eval.py`); one test seed =
     one replicate.
 
+## Stage S6: trained codec and GRU beam predictor (replace the placeholders)
+
+68. **Codec** (`tvcsi.models.trained.TrainedEncoder/TrainedDecoder`, faculty ProgressiveCodec
+    adapted): input = Re and Im of the user's latest pilot estimate plus its pilot SNR / 30;
+    encoder 2M+1 -> 128 -> 32 values in [-1, 1], each quantised to 4 bits (16 levels, straight-
+    through estimator in training). Mode m sends the first d_m = 8 / 16 / 32 values, so the report
+    is exactly C_m = 32 / 64 / 128 bits and higher modes refine lower ones (Eq. 10). The decoder
+    zero-fills the values not sent and outputs log(1 + g) for all B beams. Uplink errors, headers
+    and delay of the report are not modelled (as before).
+69. **GRU predictor** (`GRUPredictor`, faculty BeamGRU adapted): per slot input = log(1 + last
+    DECODED gains), age (capped at 100, scaled by 25), fresh flag, speed / 60, SNR / 30; a GRU over
+    the last 8 slots and a head that outputs log(1 + g) and a confidence logit. The confidence is
+    learned: Pr[the predicted beam has >= 90 % of the best beam's gain] (the faculty GRU had none).
+    The gNB's own predictions are not fed back into the history (as faculty `History`).
+70. **Training**: train seeds 3000-3019 cycled over the default point and 9 speed / SNR variations
+    (`models_train.grid`), the simulator's own realisations; epochs chosen on validation seeds
+    2000-2004 (lowest mean regret); GRU histories from random-feedback policies (P(mode 0) in
+    `estimator.fit_p0`) using the trained codec's decoded gains. Diagnostics on test seeds.
+71. **S6 gate: the GRU does not beat persistence at the default point** (test regret 0.2922 vs
+    0.2921, better on 5/10 seeds). It does at 3 km/h (8/10), 60 km/h (9/10) and SNR 5 dB (10/10).
+    The synthetic channel (AR(1) Jakes path gains, random-walk angles) is close to memoryless given
+    the last report, so history adds little; at low SNR the GRU gains by denoising. As agreed in
+    HANDOFF §6, the predictor stays **persistence**; the final configuration is the trained codec
+    with persistence (`trained.predictor: tvcsi.models.trained:Persistence`, same rule as the dummy
+    PersistencePredictor). With the GRU the system scores slightly lower (Proposed 2.769 vs 2.774).
+72. **Inference in numpy.** Torch is needed only to train (`scripts/train_models.py`); the weights
+    are stored as plain arrays in `data/models/s6_models.npz` (190 kB, committed) and run with numpy,
+    checked against torch to 1e-9 (`tests/test_s6_models.py`).
+73. **One estimator per model setup.** The S4 estimator learns from what the predictor and codec
+    produce, so each model setup gets its own (the cache hash covers `models` and, when
+    `models: trained`, the `trained` section; with dummy models that section is ignored).
+    Validation gain correlation: dummy 0.29 / 0.35 / 0.38; trained codec + persistence
+    0.30 / 0.37 / 0.39; trained codec + GRU 0.30 / 0.37 / 0.38.
+
 ## Parameter values: what, why, how, where
 
 Every number added in Phase 1, in the same format. "Source" is the document the value comes from;
@@ -638,4 +672,17 @@ standard value exists, this is said explicitly and the value is stress-tested in
 **P32. Calibration points (`risk.calib_points`)**
 * Value: default; budget_frac 0.1; speed 60 km/h; crit_share 0.5: the points where critical users
   are hardest to protect (small budget, stale predictions, many critical users competing).
+
+**P33. Codec size (`scripts/train_models.py::Codec`)**
+* Value: hidden 128 (faculty 96), 32 latent values, 4 bits each (our C_m; faculty 6 bits).
+* Why: 32 latent values x 4 bits = 128 bits = C_3 of the spec; the hidden layer is larger than the
+  faculty's because M = B = 32 here (faculty 16).
+
+**P34. GRU size and window (`models_train.gru_hidden`, `window`)**
+* Value: hidden 64 (faculty 48), window 8 slots (faculty 5; = `feedback.history_len`).
+
+**P35. Training settings (`models_train`, `scripts/train_models.py`)**
+* Value: Adam, lr 2e-3, batch 512, gradient clip 2.0 (faculty values); codec 15 epochs, GRU 12,
+  best validation epoch kept (chosen: 15 and 11); codec loss MSE + 0.08 x CE (faculty), GRU loss
+  MSE + 0.1 x BCE(confidence); one window every 8 slots; seed 7; CPU, torch 2.15.
 

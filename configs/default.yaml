@@ -3,10 +3,23 @@
 
 models: dummy              # dummy | trained
 trained:                   # used only when models == trained; dotted paths "package.module:ClassName"
-  encoder: null
-  decoder: null
-  predictor: null
-  kwargs: {}               # passed to every trained-model constructor
+  encoder: tvcsi.models.trained:TrainedEncoder     # S6: 4-bit progressive codec (numpy inference)
+  decoder: tvcsi.models.trained:TrainedDecoder
+  predictor: tvcsi.models.trained:Persistence      # S6 gate: the GRU (tvcsi.models.trained:GRUPredictor) does not
+                                                   #   beat persistence at the default point, so persistence is kept
+  kwargs: {weights: data/models/s6_models.npz}     # passed to every trained-model constructor
+
+models_train:              # S6: scripts/train_models.py (torch, CPU); writes `out`.npz / .json
+  out: data/models/s6_models
+  grid:                    # default point + one-at-a-time variations; train seeds cycled over them
+    channel.speed_kmh: [3, 10, 20, 40, 60]
+    link.snr_db: [5, 10, 20, 25]
+  epochs_codec: 15         # the epoch with the lowest validation regret is kept
+  epochs_gru: 12
+  window: 8                # slots of history the GRU sees (faculty: 5)
+  slot_stride: 8           # keep one training window every 8 slots
+  gru_hidden: 64           # faculty: 48
+  seed: 7
 
 system:
   K: 8                     # users

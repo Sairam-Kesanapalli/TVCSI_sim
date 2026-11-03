@@ -1,6 +1,6 @@
 # HANDOFF — start here (for collaborators and their AI agents)
 
-**Last updated: 2026-11-03, after S5 (see `checkpoints/S5_checkpoint.md`). Next stage: S6.**
+**Last updated: 2026-11-03, after S6 (see `checkpoints/S6_checkpoint.md`). Next stage: S7.**
 
 This file is the entry point for anyone continuing the project on another computer. It says what
 the project is, what is finished, where every piece of earlier work lives, which rules apply, and
@@ -47,8 +47,8 @@ a checkpoint document and a stop for the group's approval):
 | S3 | side track: plumbing — give schemes the gNB-side state (decisions bit-identical) | done |
 | S4 | side track: learned per-mode quality estimator (frozen), replaces the plug-in | done |
 | S5 | side track: calibrated risk handling + five faculty baselines + paired Holm statistics | done |
-| **S6** | side track: ProgressiveCodec + BeamGRU adapted to our system, trained | **next** |
-| S7 | final experiments, comparison of both tracks, report | — |
+| S6 | side track: ProgressiveCodec + BeamGRU adapted to our system, trained | done (GRU fails gate → persistence kept; trained codec adopted) |
+| **S7** | final experiments, comparison of both tracks, report | **next** |
 
 ---
 
