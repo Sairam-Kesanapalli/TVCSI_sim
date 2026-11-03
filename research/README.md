@@ -74,11 +74,18 @@ Check that the side-track environment imports this checkout:
 
 ## Commits
 
-* Work on this branch; `main` changes only by merging the PR.
-* Author `SairamKesanapalli <sairamkesanapalli@gmail.com>` with the trailer
+* All stage work is committed and pushed to the branch **`research/stages-s0-s7`**; `main` changes
+  only by merging the PR.
+* **Authorship: everyone authors their own commits** under their own git name and e-mail
+  (`git config user.name` / `user.email` in your clone). Commits made on behalf of Sairam and
+  Durgesh use author `SairamKesanapalli <sairamkesanapalli@gmail.com>` with the trailer
   `Co-authored-by: Durgesh Janapareddy <durgeshjanapareddy9@gmail.com>` (the convention of the
-  existing history). **No AI co-author or attribution lines.**
-* One commit (or a few) per stage, ending with that stage's checkpoint document.
+  existing history). **No AI co-author or attribution lines** in any commit.
+* Shared branch etiquette: `git pull` before starting, push right after finishing a stage, one
+  person per stage at a time, **never force-push**. For extra safety, work on your own branch
+  (e.g. `research/s3-<name>`) and open a PR into `research/stages-s0-s7`.
+* One commit (or a few) per stage, ending with that stage's checkpoint document; update the stage
+  status table above.
 * On Windows PowerShell pass multi-line messages with `git commit -F <file>`.
 
 ## Model allocation (for AI-assisted sessions)
