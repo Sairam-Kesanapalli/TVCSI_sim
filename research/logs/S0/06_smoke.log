@@ -1,0 +1,9 @@
+== side track: import location (must be the COPY)
+C:\Users\JSSR DURGESH\Documents\TVCSI_research\side_track_combined\TVCSI_combined\src\tvcsi\__init__.py
+cuda True | sionna 2.2.0 | sklearn 1.9.1
+== side track tests
+....................................x...                                 [100%]
+39 passed, 1 xfailed in 43.13s
+== main track tests (faculty, unmodified)
+.....                                                                    [100%]
+5 passed in 106.67s (0:01:46)

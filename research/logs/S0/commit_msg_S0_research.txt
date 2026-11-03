@@ -1,0 +1,15 @@
+S0: research workspace, checkpoint and unmodified faculty code
+
+Stage S0 of the staged integration of TVCSI_sim with the faculty's TaskVoCSI_v2.
+
+- research/README.md: set-up on a new computer, stage plan S0-S7, rules, commit
+  convention, model allocation.
+- research/checkpoints/S0_checkpoint.md: what S0 did and verified, decisions, next stage.
+- research/logs/S0/: S0 evidence (original state, backups, copies, environments, tests,
+  integrity check).
+- research/manifests/: SHA-256 of every original file (TVCSI_sim at Phase 2, faculty code).
+- research/tools/make_manifest.py: write/verify such manifests.
+- research/faculty_TaskVoCSI_v2/: the faculty implementation, unmodified (byte-identical
+  to its manifest); main-track source for S1.
+
+Co-authored-by: Durgesh Janapareddy <durgeshjanapareddy9@gmail.com>

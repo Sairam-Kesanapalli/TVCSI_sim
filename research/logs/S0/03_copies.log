@@ -1,0 +1,33 @@
+
+
+------------------------------------------------------------------------------
+
+               Total    Copied   Skipped  Mismatch    FAILED    Extras
+    Dirs :         4         4         0         0         0         0
+   Files :        23        23         0         0         0         0
+   Bytes :   100.2 k   100.2 k         0         0         0         0
+   Times :   0:00:00   0:00:00                       0:00:00   0:00:00
+
+
+   Speed :           51,31,250 Bytes/sec.
+   Speed :             293.612 MegaBytes/min.
+   Ended : 03 November 2026 12:38:02
+
+
+
+------------------------------------------------------------------------------
+
+               Total    Copied   Skipped  Mismatch    FAILED    Extras
+    Dirs :       127       120         7         0         0         0
+   Files :       398       398         0         0         0         0
+   Bytes :   19.39 m   19.39 m         0         0         0         0
+   Times :   0:00:00   0:00:00                       0:00:00   0:00:00
+
+
+   Speed :           5,32,29,620 Bytes/sec.
+   Speed :             3,045.823 MegaBytes/min.
+   Ended : 03 November 2026 12:38:02
+
+robocopy exit codes <8 = success
+main track copy: 23 expected files, 0 mismatched/missing, 0 extra -> IDENTICAL
+side track copy: 398 expected files, 0 mismatched/missing, 0 extra -> IDENTICAL

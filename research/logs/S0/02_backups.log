@@ -1,0 +1,9 @@
+== manifests
+426 files, 20.4 MB -> C:\Users\JSSR DURGESH\Documents\TVCSI_research\00_backups\manifests\TVCSI_sim_original.csv
+23 files, 0.1 MB -> C:\Users\JSSR DURGESH\Documents\TVCSI_research\00_backups\manifests\TaskVoCSI_faculty_original.csv
+== zips
+TaskVoCSI_v2_original_S0_20261103.zip: 0.0 MB, sha256 594E7620A16D7FF5A325C7620EB7A3854CA1B29E1E68C50C164C155181F124F1
+TVCSI_sim_S0_20261103.zip: 16.3 MB, sha256 79AF0B75BA9632123747327926F4CC9ACC483AD014B909EBE557BCD408AD477A
+== zip content check
+TaskVoCSI_v2_original_S0_20261103.zip: 23 entries
+TVCSI_sim_S0_20261103.zip: 474 entries
